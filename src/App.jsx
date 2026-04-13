@@ -1273,10 +1273,10 @@ export default function App() {
                  <div className="p-6 md:p-8 overflow-y-auto">
                     <h2 className="text-2xl font-bold mb-6 text-slate-900">Sistem İstatistikleri</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-indigo-600">{adminStats.activeThreadsToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye</p><p className="text-3xl font-black text-emerald-600">{adminStats.newMembersToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Yanıt Hızı</p><p className="text-3xl font-black text-amber-600">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
+                       <div className="panel-card"><p className="kpi-title">Toplam Mesaj</p><p className="kpi-value">{adminStats.totalMessagesToday}</p></div>
+                       <div className="panel-card"><p className="kpi-title">Aktif Thread</p><p className="kpi-value kpi-value--primary">{adminStats.activeThreadsToday}</p></div>
+                       <div className="panel-card"><p className="kpi-title">Yeni Üye</p><p className="kpi-value kpi-value--success">{adminStats.newMembersToday}</p></div>
+                       <div className="panel-card"><p className="kpi-title">Ort. Yanıt Hızı</p><p className="kpi-value kpi-value--warning">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
                     </div>
                  </div>
                )}

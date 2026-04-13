@@ -91,6 +91,12 @@ export default function App() {
     activeThreadsToday: 0,
     avgResponseMinToday: 0,
   });
+  const [adminStatDeltas, setAdminStatDeltas] = useState({
+    totalMessagesToday: 0,
+    activeThreadsToday: 0,
+    newMembersToday: 0,
+    avgResponseMinToday: 0,
+  });
   const [statsRange, setStatsRange] = useState('daily');
   const [adminTab, setAdminTab] = useState('chat');
   const [quickFactsText, setQuickFactsText] = useState('');
@@ -153,6 +159,25 @@ export default function App() {
       : 0;
     return { waitingCount: waiting.length, avgWaitMin, lastReplyMin: selectedThread?.last_message_at ? (now - new Date(selectedThread.last_message_at).getTime()) / 60000 : 0 };
   }, [incomingThreads, selectedThread, adminUnreadByThread]);
+
+  const slaCards = useMemo(() => {
+    const waitStatus = slaStats.waitingCount >= 8 ? 'kritik' : slaStats.waitingCount >= 3 ? 'izlenmeli' : 'iyi';
+    const avgWaitStatus = slaStats.avgWaitMin >= 10 ? 'kritik' : slaStats.avgWaitMin >= 5 ? 'izlenmeli' : 'iyi';
+    return [
+      {
+        title: 'Bekleyen Mesaj',
+        value: slaStats.waitingCount,
+        tone: waitStatus === 'kritik' ? 'danger' : waitStatus === 'izlenmeli' ? 'warning' : 'success',
+        status: waitStatus === 'kritik' ? 'Kritik' : waitStatus === 'izlenmeli' ? 'İzlenmeli' : 'İyi',
+      },
+      {
+        title: 'Ort. Bekleme',
+        value: slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`,
+        tone: avgWaitStatus === 'kritik' ? 'danger' : avgWaitStatus === 'izlenmeli' ? 'warning' : 'success',
+        status: avgWaitStatus === 'kritik' ? 'Kritik' : avgWaitStatus === 'izlenmeli' ? 'İzlenmeli' : 'İyi',
+      },
+    ];
+  }, [slaStats]);
 
   const interestScore = useMemo(() => {
     if (!selectedProfileId) return 0;
@@ -831,51 +856,94 @@ export default function App() {
 
   async function fetchAdminStats() {
     if (!isAdmin) return;
+    const summarizeMessageRows = (rows) => {
+      const list = rows || [];
+      const memberMessages = list.filter((m) => m.sender_role === 'member');
+      const adminReplies = list.filter((m) => m.sender_role === 'virtual');
+      const activeThreadKeys = new Set(list.map((m) => `${m.member_id}::${m.virtual_profile_id}`));
+      const respondedThreadKeys = new Set();
+      const responseMinutes = [];
+
+      const grouped = new Map();
+      list.forEach((m) => {
+        const key = `${m.member_id}::${m.virtual_profile_id}`;
+        if (!grouped.has(key)) grouped.set(key, []);
+        grouped.get(key).push(m);
+      });
+
+      grouped.forEach((threadRows, key) => {
+        threadRows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        let lastMemberTs = null;
+        threadRows.forEach((row) => {
+          if (row.sender_role === 'member') lastMemberTs = row.created_at;
+          else if (row.sender_role === 'virtual' && lastMemberTs) {
+            respondedThreadKeys.add(key);
+            const diffMin = (new Date(row.created_at).getTime() - new Date(lastMemberTs).getTime()) / 60000;
+            if (diffMin >= 0) responseMinutes.push(diffMin);
+            lastMemberTs = null;
+          }
+        });
+      });
+
+      return {
+        totalMessagesToday: list.length,
+        memberMessagesToday: memberMessages.length,
+        adminRepliesToday: adminReplies.length,
+        respondedThreadsToday: respondedThreadKeys.size,
+        activeThreadsToday: activeThreadKeys.size,
+        avgResponseMinToday: responseMinutes.length ? responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length : 0,
+      };
+    };
+
+    const pct = (current, previous) => {
+      if (!previous && !current) return 0;
+      if (!previous) return 100;
+      return ((current - previous) / previous) * 100;
+    };
+
     const start = new Date();
     if (statsRange === 'daily') start.setHours(0, 0, 0, 0);
     else if (statsRange === 'weekly') start.setDate(start.getDate() - 7);
     else start.setMonth(start.getMonth() - 1);
     const startIso = start.toISOString();
+    const now = new Date();
+    const last24hStart = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    const prev24hStart = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+    const prev24hEnd = last24hStart;
 
-    const [{ data: todayMessages, error: msgErr }, { data: todayMembers, error: memberErr }] = await Promise.all([
+    const [
+      { data: todayMessages, error: msgErr },
+      { data: todayMembers, error: memberErr },
+      { data: last24hMessages, error: last24MsgErr },
+      { data: prev24hMessages, error: prev24MsgErr },
+      { data: last24hMembers, error: last24MemberErr },
+      { data: prev24hMembers, error: prev24MemberErr },
+    ] = await Promise.all([
       supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', startIso),
       supabase.from('members').select('id, created_at').gte('created_at', startIso),
+      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', last24hStart),
+      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', prev24hStart).lt('created_at', prev24hEnd),
+      supabase.from('members').select('id, created_at').gte('created_at', last24hStart),
+      supabase.from('members').select('id, created_at').gte('created_at', prev24hStart).lt('created_at', prev24hEnd),
     ]);
 
-    if (msgErr || memberErr) return setStatus(msgErr?.message || memberErr?.message || 'Stats alınamadı.');
+    if (msgErr || memberErr || last24MsgErr || prev24MsgErr || last24MemberErr || prev24MemberErr) {
+      return setStatus(msgErr?.message || memberErr?.message || last24MsgErr?.message || prev24MsgErr?.message || last24MemberErr?.message || prev24MemberErr?.message || 'Stats alınamadı.');
+    }
 
-    const messages = todayMessages || [];
-    const memberMessages = messages.filter((m) => m.sender_role === 'member');
-    const adminReplies = messages.filter((m) => m.sender_role === 'virtual');
-    const activeThreadKeys = new Set(messages.map((m) => `${m.member_id}::${m.virtual_profile_id}`));
-    const respondedThreadKeys = new Set();
-    const responseMinutes = [];
-
-    const grouped = new Map();
-    messages.forEach((m) => {
-      const key = `${m.member_id}::${m.virtual_profile_id}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(m);
-    });
-
-    grouped.forEach((rows, key) => {
-      rows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      let lastMemberTs = null;
-      rows.forEach((row) => {
-        if (row.sender_role === 'member') lastMemberTs = row.created_at;
-        else if (row.sender_role === 'virtual' && lastMemberTs) {
-          respondedThreadKeys.add(key);
-          const diffMin = (new Date(row.created_at).getTime() - new Date(lastMemberTs).getTime()) / 60000;
-          if (diffMin >= 0) responseMinutes.push(diffMin);
-          lastMemberTs = null;
-        }
-      });
-    });
-
+    const currentStats = summarizeMessageRows(todayMessages || []);
     setAdminStats({
-      totalMessagesToday: messages.length, memberMessagesToday: memberMessages.length, adminRepliesToday: adminReplies.length,
-      respondedThreadsToday: respondedThreadKeys.size, newMembersToday: (todayMembers || []).length, activeThreadsToday: activeThreadKeys.size,
-      avgResponseMinToday: responseMinutes.length ? responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length : 0,
+      ...currentStats,
+      newMembersToday: (todayMembers || []).length,
+    });
+
+    const last24 = summarizeMessageRows(last24hMessages || []);
+    const prev24 = summarizeMessageRows(prev24hMessages || []);
+    setAdminStatDeltas({
+      totalMessagesToday: pct(last24.totalMessagesToday, prev24.totalMessagesToday),
+      activeThreadsToday: pct(last24.activeThreadsToday, prev24.activeThreadsToday),
+      newMembersToday: pct((last24hMembers || []).length, (prev24hMembers || []).length),
+      avgResponseMinToday: pct(last24.avgResponseMinToday, prev24.avgResponseMinToday),
     });
   }
 
@@ -1203,9 +1271,16 @@ export default function App() {
 
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                   <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">SLA & Durum</h3>
-                  <div className="space-y-2 text-sm text-slate-700">
-                    <div className="flex justify-between"><span>Bekleyen Mesaj:</span> <strong className="text-rose-600">{slaStats.waitingCount}</strong></div>
-                    <div className="flex justify-between"><span>Ort. Bekleme:</span> <strong>{slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`}</strong></div>
+                  <div className="space-y-2">
+                    {slaCards.map((card) => (
+                      <div key={card.title} className="panel-card !p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-semibold text-slate-500">{card.title}</p>
+                          <span className={`kpi-badge ${card.tone === 'danger' ? 'kpi-badge--danger' : card.tone === 'warning' ? 'kpi-badge--warning' : 'kpi-badge--success'}`}>{card.status}</span>
+                        </div>
+                        <p className={`text-xl font-black mt-1 ${card.tone === 'danger' ? 'text-rose-600' : card.tone === 'warning' ? 'text-amber-600' : 'text-emerald-600'}`}>{card.value}</p>
+                      </div>
+                    ))}
                   </div>
                </div>
             </aside>
@@ -1273,10 +1348,38 @@ export default function App() {
                  <div className="p-6 md:p-8 overflow-y-auto">
                     <h2 className="text-2xl font-bold mb-6 text-slate-900">Sistem İstatistikleri</h2>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                       <div className="panel-card"><p className="kpi-title">Toplam Mesaj</p><p className="kpi-value">{adminStats.totalMessagesToday}</p></div>
-                       <div className="panel-card"><p className="kpi-title">Aktif Thread</p><p className="kpi-value kpi-value--primary">{adminStats.activeThreadsToday}</p></div>
-                       <div className="panel-card"><p className="kpi-title">Yeni Üye</p><p className="kpi-value kpi-value--success">{adminStats.newMembersToday}</p></div>
-                       <div className="panel-card"><p className="kpi-title">Ort. Yanıt Hızı</p><p className="kpi-value kpi-value--warning">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
+                       <div className="panel-card">
+                         <div className="flex items-center justify-between gap-2">
+                           <p className="kpi-title">Toplam Mesaj</p>
+                           <span className={`kpi-trend ${adminStatDeltas.totalMessagesToday >= 0 ? 'kpi-trend--up' : 'kpi-trend--down'}`}>{adminStatDeltas.totalMessagesToday >= 0 ? '↑' : '↓'} {Math.abs(adminStatDeltas.totalMessagesToday).toFixed(1)}%</span>
+                         </div>
+                         <p className="kpi-value">{adminStats.totalMessagesToday}</p>
+                         <span className="kpi-badge kpi-badge--neutral mt-2">Son 24 saate göre</span>
+                       </div>
+                       <div className="panel-card">
+                         <div className="flex items-center justify-between gap-2">
+                           <p className="kpi-title">Aktif Thread</p>
+                           <span className={`kpi-trend ${adminStatDeltas.activeThreadsToday >= 0 ? 'kpi-trend--up' : 'kpi-trend--down'}`}>{adminStatDeltas.activeThreadsToday >= 0 ? '↑' : '↓'} {Math.abs(adminStatDeltas.activeThreadsToday).toFixed(1)}%</span>
+                         </div>
+                         <p className="kpi-value kpi-value--primary">{adminStats.activeThreadsToday}</p>
+                         <span className={`kpi-badge mt-2 ${adminStats.activeThreadsToday >= 10 ? 'kpi-badge--success' : adminStats.activeThreadsToday >= 5 ? 'kpi-badge--warning' : 'kpi-badge--danger'}`}>{adminStats.activeThreadsToday >= 10 ? 'Yoğun' : adminStats.activeThreadsToday >= 5 ? 'Orta' : 'Düşük'}</span>
+                       </div>
+                       <div className="panel-card">
+                         <div className="flex items-center justify-between gap-2">
+                           <p className="kpi-title">Yeni Üye</p>
+                           <span className={`kpi-trend ${adminStatDeltas.newMembersToday >= 0 ? 'kpi-trend--up' : 'kpi-trend--down'}`}>{adminStatDeltas.newMembersToday >= 0 ? '↑' : '↓'} {Math.abs(adminStatDeltas.newMembersToday).toFixed(1)}%</span>
+                         </div>
+                         <p className="kpi-value kpi-value--success">{adminStats.newMembersToday}</p>
+                         <span className={`kpi-badge mt-2 ${adminStats.newMembersToday >= 5 ? 'kpi-badge--success' : adminStats.newMembersToday >= 2 ? 'kpi-badge--warning' : 'kpi-badge--danger'}`}>{adminStats.newMembersToday >= 5 ? 'Güçlü Büyüme' : adminStats.newMembersToday >= 2 ? 'Stabil' : 'Yavaş'}</span>
+                       </div>
+                       <div className="panel-card">
+                         <div className="flex items-center justify-between gap-2">
+                           <p className="kpi-title">Ort. Yanıt Hızı</p>
+                           <span className={`kpi-trend ${adminStatDeltas.avgResponseMinToday <= 0 ? 'kpi-trend--up' : 'kpi-trend--down'}`}>{adminStatDeltas.avgResponseMinToday <= 0 ? '↑' : '↓'} {Math.abs(adminStatDeltas.avgResponseMinToday).toFixed(1)}%</span>
+                         </div>
+                         <p className="kpi-value kpi-value--warning">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p>
+                         <span className={`kpi-badge mt-2 ${adminStats.avgResponseMinToday <= 3 ? 'kpi-badge--success' : adminStats.avgResponseMinToday <= 8 ? 'kpi-badge--warning' : 'kpi-badge--danger'}`}>{adminStats.avgResponseMinToday <= 3 ? 'Hızlı' : adminStats.avgResponseMinToday <= 8 ? 'Normal' : 'Yavaş'}</span>
+                       </div>
                     </div>
                  </div>
                )}

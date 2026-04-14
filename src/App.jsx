@@ -944,17 +944,15 @@ export default function App() {
 
   async function saveQuickFacts() {
     if (!selectedThread) return;
-    const safeBase = String(selectedThread.member_username || 'legacy_user').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').slice(0, 20) || 'legacy_user';
-    const fallbackUsername = `${safeBase}_${String(selectedThread.member_id).replace(/-/g, '').slice(0, 8)}`;
-    const exists = await supabase.from('members').select('id').eq('id', selectedThread.member_id).maybeSingle();
-    if (!exists.data?.id) {
-      const ensureResult = await supabase.from('members').upsert(
-        { id: selectedThread.member_id, username: fallbackUsername, password_hash: `legacy-${String(selectedThread.member_id).replace(/-/g, '')}` },
-        { onConflict: 'id' }
-      );
-      if (ensureResult.error) return setStatus(`Üye kaydı doğrulanamadı: ${ensureResult.error.message}`);
+    const { error } = await supabase.rpc('admin_upsert_thread_quick_facts', {
+      p_member_id: selectedThread.member_id,
+      p_virtual_profile_id: selectedThread.virtual_profile_id,
+      p_notes: quickFactsText,
+      p_fallback_username: selectedThread.member_username || null,
+    });
+    if (error && String(error.message || '').includes('admin_upsert_thread_quick_facts')) {
+      return setStatus('DB fonksiyonu eksik: supabase/fix_thread_quick_facts_fk.sql scriptini çalıştırmalısın.');
     }
-    const { error } = await supabase.from('thread_quick_facts').upsert({ member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, notes: quickFactsText }, { onConflict: 'member_id,virtual_profile_id' });
     if (error) return setStatus(error.message);
     setStatus('Quick Facts kaydedildi.');
   }

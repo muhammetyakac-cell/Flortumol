@@ -99,7 +99,6 @@ export default function App() {
   const [profileSearch, setProfileSearch] = useState('');
   const [discoverSort, setDiscoverSort] = useState('match');
   const [likedProfiles, setLikedProfiles] = useState({});
-  const [heartedProfiles, setHeartedProfiles] = useState({});
   const [wavedProfiles, setWavedProfiles] = useState({});
   const [userView, setUserView] = useState('discover');
   const [registeredMembers, setRegisteredMembers] = useState([]);
@@ -117,6 +116,8 @@ export default function App() {
   const profileListRef = useRef(null);
   const threadQueueRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const onboardingLoggedStepsRef = useRef(new Set());
+  const prevOnboardingStateRef = useRef(null);
 
   const selectedProfile = useMemo(() => virtualProfiles.find((p) => p.id === selectedProfileId) || null, [selectedProfileId, virtualProfiles]);
   const sortedProfiles = useMemo(() => {
@@ -234,11 +235,60 @@ export default function App() {
   const onboardingState = useMemo(() => {
     const hasPhoto = !!memberProfile.photo_url;
     const hasHobbies = (memberProfile.hobbies || '').split(',').map((x) => x.trim()).filter(Boolean).length > 0;
+    const hasCity = !!(memberProfile.city || '').trim();
+    const hasAge = Number(memberProfile.age || 0) > 0;
+    const hasProfileBasics = hasHobbies && hasCity && hasAge;
     const hasThreeActions = onboardingActionCount >= 3;
-    const completed = hasPhoto && hasHobbies && hasThreeActions;
-    const currentStep = !hasPhoto ? 1 : !hasHobbies ? 2 : !hasThreeActions ? 3 : 0;
-    return { hasPhoto, hasHobbies, hasThreeActions, completed, currentStep };
-  }, [memberProfile.photo_url, memberProfile.hobbies, onboardingActionCount]);
+    const completed = hasPhoto && hasProfileBasics && hasThreeActions;
+    const currentStep = !hasPhoto ? 1 : !hasProfileBasics ? 2 : !hasThreeActions ? 3 : 0;
+    const completedSteps = [hasPhoto, hasProfileBasics, hasThreeActions].filter(Boolean).length;
+    const completionRatio = Math.round((completedSteps / 3) * 100);
+    return { hasPhoto, hasHobbies, hasCity, hasAge, hasProfileBasics, hasThreeActions, completed, currentStep, completedSteps, completionRatio };
+  }, [memberProfile.photo_url, memberProfile.hobbies, memberProfile.city, memberProfile.age, onboardingActionCount]);
+
+  const onboardingWizardSteps = useMemo(() => ([
+    { step: 1, title: 'Fotoğraf Yükleme', description: 'Profil fotoğrafını ekleyerek görünürlüğünü artır.', completed: onboardingState.hasPhoto, cta: 'Fotoğraf Ekle', targetView: 'profile' },
+    { step: 2, title: 'Hobi / Şehir / Yaş', description: 'Hobi, şehir ve yaş alanlarını doldur.', completed: onboardingState.hasProfileBasics, cta: 'Bilgileri Tamamla', targetView: 'profile' },
+    { step: 3, title: 'İlk Etkileşim', description: 'Bir profile like, wave gönder veya mesaj at.', completed: onboardingState.hasThreeActions, cta: 'Keşfet ve Etkileş', targetView: 'discover' },
+  ]), [onboardingState.hasPhoto, onboardingState.hasProfileBasics, onboardingState.hasThreeActions]);
+
+  const onboardingNextStep = useMemo(
+    () => onboardingWizardSteps.find((item) => !item.completed) || null,
+    [onboardingWizardSteps]
+  );
+
+  const discoverDisableReason = useMemo(() => {
+    const missing = [];
+    if (!onboardingState.hasPhoto) missing.push('profil fotoğrafı');
+    if (!onboardingState.hasAge) missing.push('yaş');
+    if (!onboardingState.hasCity) missing.push('şehir');
+    if (!onboardingState.hasHobbies) missing.push('hobi');
+    if (!missing.length) return '';
+    return `Etkileşim için önce ${missing.join(', ')} bilgisini tamamlamalısın.`;
+  }, [onboardingState.hasPhoto, onboardingState.hasAge, onboardingState.hasCity, onboardingState.hasHobbies]);
+
+  useEffect(() => {
+    if (!memberSession || isAdmin) return;
+    const prev = prevOnboardingStateRef.current;
+    const checkpoints = [
+      { key: 'step_1_photo', completed: onboardingState.hasPhoto, ratio: 33 },
+      { key: 'step_2_profile_basics', completed: onboardingState.hasProfileBasics, ratio: 67 },
+      { key: 'step_3_first_interaction', completed: onboardingState.hasThreeActions, ratio: 100 },
+    ];
+
+    checkpoints.forEach(({ key, completed, ratio }) => {
+      const becameCompleted = completed && (!prev || !prev[key]);
+      if (!becameCompleted || onboardingLoggedStepsRef.current.has(key)) return;
+      onboardingLoggedStepsRef.current.add(key);
+      recordEngagement('onboarding_step_completed', memberSession.id, null, { step: key, completion_ratio: ratio });
+    });
+
+    prevOnboardingStateRef.current = {
+      step_1_photo: onboardingState.hasPhoto,
+      step_2_profile_basics: onboardingState.hasProfileBasics,
+      step_3_first_interaction: onboardingState.hasThreeActions,
+    };
+  }, [memberSession, isAdmin, onboardingState.hasPhoto, onboardingState.hasProfileBasics, onboardingState.hasThreeActions]);
 
   function threadKey(memberId, profileId) { return `${memberId}::${profileId}`; }
 
@@ -1084,17 +1134,65 @@ export default function App() {
         </div>
       </header>
 
-      {/* 🚀 ONBOARDING BANNER */}
-      {loggedIn && !isAdmin && !onboardingState.completed && (
-        <div className="bg-amber-100 border-b border-amber-200 px-6 py-3">
-          <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-4">
-             <div>
-              <p className="font-bold text-amber-900">Hoş geldin! Profilini tamamla ({onboardingState.currentStep}/3)</p>
-              <p className="text-sm text-amber-800">Fotoğraf ekle, hobilerini gir ve eşleşmelere başla.</p>
+      {/* 🚀 ONBOARDING WIZARD BANNER */}
+      {loggedIn && !isAdmin && (
+        <div className={`border-b px-6 py-4 ${onboardingState.completed ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-100 border-amber-200'}`}>
+          <div className="max-w-[1440px] mx-auto space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className={`font-bold ${onboardingState.completed ? 'text-emerald-900' : 'text-amber-900'}`}>
+                  {onboardingState.completed ? 'Onboarding tamamlandı 🎉' : `Onboarding Wizard (${onboardingState.currentStep}/3)`}
+                </p>
+                <p className={`text-sm ${onboardingState.completed ? 'text-emerald-800' : 'text-amber-800'}`}>
+                  {onboardingState.completed ? 'Harika! Artık Keşfet ekranında yeni eşleşmelere odaklanabilirsin.' : 'Adımları sırayla tamamla ve profilini güçlendir.'}
+                </p>
+              </div>
+              {!onboardingState.completed && onboardingNextStep && (
+                <button onClick={() => setUserView(onboardingNextStep.targetView)} className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm">
+                  Sonraki Adım: {onboardingNextStep.cta}
+                </button>
+              )}
             </div>
-            <button onClick={() => setUserView((!onboardingState.hasPhoto || !onboardingState.hasHobbies) ? 'profile' : 'discover')} className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm">
-              Adımı Tamamla
-            </button>
+
+            <div className="w-full bg-white/60 rounded-full h-2.5 overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${onboardingState.completed ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                style={{ width: `${onboardingState.completionRatio}%` }}
+              />
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-3">
+              {onboardingWizardSteps.map((item) => (
+                <div key={item.step} className={`rounded-xl border px-4 py-3 ${item.completed ? 'bg-emerald-50 border-emerald-200' : 'bg-white/70 border-amber-200'}`}>
+                  <p className="text-xs font-bold text-slate-500">ADIM {item.step}</p>
+                  <p className="text-sm font-bold text-slate-800">{item.title}</p>
+                  <p className="text-xs text-slate-600 mt-1">{item.description}</p>
+                  <div className="mt-2 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                    <div className={`h-full transition-all ${item.completed ? 'bg-emerald-500 w-full' : 'bg-amber-500 w-1/3'}`} />
+                  </div>
+                  <div className="mt-2 flex items-center justify-between">
+                    <span className={`text-xs font-bold ${item.completed ? 'text-emerald-600' : 'text-amber-700'}`}>{item.completed ? 'Tamamlandı' : 'Bekliyor'}</span>
+                    {!item.completed && (
+                      <button onClick={() => setUserView(item.targetView)} className="text-xs font-bold underline underline-offset-2 text-slate-700">
+                        {item.cta}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {onboardingState.hasThreeActions && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/80 border border-emerald-200 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-white animate-bounce">✨</span>
+                  <p className="text-sm font-bold text-emerald-800">İlk etkileşim hedefin tamamlandı! Hazırsan keşfetmeye devam et.</p>
+                </div>
+                <button onClick={() => setUserView('discover')} className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm">
+                  Keşfet’e Git
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1453,9 +1551,30 @@ export default function App() {
                       {profile.hobbies.split(',').slice(0,3).map(h => h.trim() && <span key={h} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{h}</span>)}
                     </div>
                     <div className="mt-auto grid grid-cols-3 gap-2">
-                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>❤️</button>
-                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>👋</button>
-                       <button onClick={() => openChatWithProfile(profile.id)} className="py-2.5 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">Mesaj</button>
+                       <button
+                         onClick={() => { if (!discoverDisableReason) { setLikedProfiles(s => ({ ...s, [profile.id]: true })); sendReaction(profile.id, 'like'); } }}
+                         disabled={!!discoverDisableReason}
+                         title={discoverDisableReason || 'Like gönder'}
+                         className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${likedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} ${discoverDisableReason ? 'opacity-60 cursor-not-allowed hover:bg-slate-50' : ''}`}
+                       >
+                         👍
+                       </button>
+                       <button
+                         onClick={() => { if (!discoverDisableReason) { setWavedProfiles(s => ({ ...s, [profile.id]: true })); sendReaction(profile.id, 'wave'); } }}
+                         disabled={!!discoverDisableReason}
+                         title={discoverDisableReason || 'Wave gönder'}
+                         className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'} ${discoverDisableReason ? 'opacity-60 cursor-not-allowed hover:bg-slate-50' : ''}`}
+                       >
+                         👋
+                       </button>
+                       <button
+                         onClick={() => { if (!discoverDisableReason) openChatWithProfile(profile.id); }}
+                         disabled={!!discoverDisableReason}
+                         title={discoverDisableReason || 'Mesaj başlat'}
+                         className={`py-2.5 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md ${discoverDisableReason ? 'opacity-60 cursor-not-allowed hover:bg-slate-900' : ''}`}
+                       >
+                         Mesaj
+                       </button>
                     </div>
                   </div>
                 </div>

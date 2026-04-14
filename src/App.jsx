@@ -1060,14 +1060,24 @@ export default function App() {
             )}
 
             {loggedIn && !isAdmin && (
-              <nav className="hidden md:flex bg-white/50 p-1 rounded-2xl border border-slate-200/50 shadow-sm backdrop-blur-md">
-                {['discover', 'chat', 'profile', 'coins'].map((view) => (
-                  <button key={view} onClick={() => setUserView(view)} className={`relative px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all duration-300 ${userView === view ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
-                    {view === 'discover' ? 'Keşfet' : view === 'chat' ? 'Mesajlar' : view === 'profile' ? 'Profil' : 'Cüzdan'}
-                    {view === 'chat' && totalUnreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
-                  </button>
-                ))}
-              </nav>
+              <div className="hidden md:flex items-center gap-3">
+                <nav className="flex bg-white/50 p-1 rounded-2xl border border-slate-200/50 shadow-sm backdrop-blur-md">
+                  {['discover', 'chat', 'profile', 'coins'].map((view) => (
+                    <button key={view} onClick={() => setUserView(view)} className={`relative px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all duration-300 ${userView === view ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+                      {view === 'discover' ? 'Keşfet' : view === 'chat' ? 'Mesajlar' : view === 'profile' ? 'Profil' : 'Cüzdan'}
+                      {view === 'chat' && totalUnreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
+                    </button>
+                  ))}
+                </nav>
+                <button
+                  onClick={() => setUserView('coins')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm font-extrabold shadow-sm hover:bg-amber-100 transition-colors"
+                  title="Jeton bakiyesi"
+                >
+                  <span aria-hidden="true">🪙</span>
+                  <span>{memberProfile.coin_balance ?? 0} jeton</span>
+                </button>
+              </div>
             )}
 
             <div className="flex items-center gap-3 border-l pl-4 border-slate-200/20">
@@ -1418,6 +1428,20 @@ export default function App() {
             <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm">
               <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
               <p className="text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
+                  <p className="text-lg font-black text-amber-900">{memberProfile.coin_balance ?? 0} jeton</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Mesaj Maliyeti</p>
+                  <p className="text-lg font-black text-slate-900">{COIN_COST_PER_MESSAGE} jeton</p>
+                </div>
+                <button onClick={() => setUserView('coins')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left hover:bg-emerald-100 transition-colors">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Hızlı İşlem</p>
+                  <p className="text-lg font-black text-emerald-900">Jeton satın al →</p>
+                </button>
+              </div>
               
               <div className="mt-8 flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />

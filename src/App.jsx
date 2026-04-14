@@ -52,9 +52,15 @@ function buildHourlyOnlineMap(profiles, hourKey) {
 export default function App() {
   const [status, setStatus] = useState('');
   const { user: memberSession, loading: authLoading, signIn: supabaseSignIn, signUp: supabaseSignUp, signOut: supabaseSignOut } = useAuth();
-  const [mode, setMode] = useState('user');
+  const [mode, setMode] = useState(() => {
+    if (typeof window === 'undefined') return 'user';
+    return window.localStorage.getItem('flort_login_mode') || 'user';
+  });
   const [authForm, setAuthForm] = useState({ username: '', password: '' });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('flort_admin_session') === 'true';
+  });
   const loading = authLoading; 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
@@ -246,6 +252,7 @@ export default function App() {
     if (mode === 'admin') {
       if ([ADMIN_PASSWORD, ADMIN_PASSWORD2].includes(authForm.password)) {
         setIsAdmin(true);
+        if (typeof window !== 'undefined') window.localStorage.setItem('flort_admin_session', 'true');
         setStatus('Admin girişi başarılı.');
       } else {
         setStatus('Admin şifresi hatalı.');
@@ -338,6 +345,22 @@ export default function App() {
   useEffect(() => {
     window.localStorage.setItem('admin_notification_sound_enabled', String(notificationSoundEnabled));
   }, [notificationSoundEnabled]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('flort_login_mode', mode);
+  }, [mode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('flort_admin_session', String(isAdmin));
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!status) return;
+    const timeoutId = window.setTimeout(() => setStatus(''), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [status]);
 
   function getAudioUrl(content) {
     const clean = (content || '').trim();
@@ -697,8 +720,14 @@ export default function App() {
   }
 
   async function handleSignOut() {
-    if (isAdmin) { setIsAdmin(false); setStatus('Admin çıkışı yapıldı.'); } 
-    else { await supabaseSignOut(); }
+    if (isAdmin) {
+      setIsAdmin(false);
+      if (typeof window !== 'undefined') window.localStorage.removeItem('flort_admin_session');
+      setStatus('Admin çıkışı yapıldı.');
+    } else {
+      await supabaseSignOut();
+      setStatus('Çıkış yapıldı.');
+    }
     
     setSelectedProfileId(null);
     setMessages([]);

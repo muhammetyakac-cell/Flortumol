@@ -115,6 +115,8 @@ export default function App() {
   const [coinPurchaseModalOpen, setCoinPurchaseModalOpen] = useState(false);
   const [zeroCoinPromptDismissed, setZeroCoinPromptDismissed] = useState(false);
   const [coinCheckoutLoading, setCoinCheckoutLoading] = useState(false);
+  const [coinSpendFeedback, setCoinSpendFeedback] = useState('');
+  const [coinSuccessGuideOpen, setCoinSuccessGuideOpen] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState({ provider: '', webhook_url: DEFAULT_CHECKOUT_ENDPOINT, is_active: false });
   const [hourKey, setHourKey] = useState(() => new Date().toISOString().slice(0, 13));
   
@@ -361,6 +363,20 @@ export default function App() {
     const timeoutId = window.setTimeout(() => setStatus(''), 5000);
     return () => window.clearTimeout(timeoutId);
   }, [status]);
+
+  useEffect(() => {
+    if (!coinSpendFeedback) return;
+    const timeoutId = window.setTimeout(() => setCoinSpendFeedback(''), 1800);
+    return () => window.clearTimeout(timeoutId);
+  }, [coinSpendFeedback]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isAdmin) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('coin_purchase') === 'success' || params.get('payment') === 'success') {
+      setCoinSuccessGuideOpen(true);
+    }
+  }, [isAdmin]);
 
   function getAudioUrl(content) {
     const clean = (content || '').trim();
@@ -703,6 +719,7 @@ export default function App() {
     if (error) { setStatus(error.message); return false; }
 
     setMemberProfile((prev) => ({ ...prev, coin_balance: nextBalance }));
+    setCoinSpendFeedback(`-${amount} jeton`);
     return true;
   }
 
@@ -716,6 +733,7 @@ export default function App() {
     const { error } = await supabase.from('member_profiles').upsert({ member_id: memberSession.id, coin_balance: nextBalance, contact_phone: memberProfile.contact_phone }, { onConflict: 'member_id' });
     if (error) return setStatus(error.message);
     setMemberProfile((prev) => ({ ...prev, coin_balance: nextBalance }));
+    setCoinSuccessGuideOpen(true);
     setStatus('Test satın alma başarılı: 5000 jeton yüklendi.');
   }
 
@@ -1145,6 +1163,15 @@ export default function App() {
             <button onClick={() => setUserView((!onboardingState.hasPhoto || !onboardingState.hasHobbies) ? 'profile' : 'discover')} className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm">
               Adımı Tamamla
             </button>
+          </div>
+        </div>
+      )}
+
+      {loggedIn && !isAdmin && Number(memberProfile.coin_balance ?? 0) < COIN_COST_PER_MESSAGE * 2 && (
+        <div className="bg-rose-50 border-b border-rose-200 px-6 py-3">
+          <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-bold text-rose-700">Düşük bakiye: Mesaj/reaksiyon başı {COIN_COST_PER_MESSAGE} jeton. Kalan bakiye ile en fazla {Math.floor(Number(memberProfile.coin_balance ?? 0) / COIN_COST_PER_MESSAGE)} işlem yapabilirsin.</p>
+            <button onClick={() => setUserView('coins')} className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">Jeton Yükle</button>
           </div>
         </div>
       )}
@@ -1630,8 +1657,8 @@ export default function App() {
                       {profile.hobbies.split(',').slice(0,3).map(h => h.trim() && <span key={h} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{h}</span>)}
                     </div>
                     <div className="mt-auto grid grid-cols-3 gap-2">
-                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>❤️</button>
-                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>👋</button>
+                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>❤️ -{COIN_COST_PER_MESSAGE}</button>
+                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>👋 -{COIN_COST_PER_MESSAGE}</button>
                        <button onClick={() => openChatWithProfile(profile.id)} className="py-2.5 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">Mesaj</button>
                     </div>
                   </div>
@@ -1703,6 +1730,10 @@ export default function App() {
                     </div>
 
                     <div className="p-4 bg-white border-t border-slate-100">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <p className="text-xs font-bold text-slate-500">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
+                        {coinSpendFeedback && <span className="text-xs font-black text-rose-600">{coinSpendFeedback}</span>}
+                      </div>
                       <div className="flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-2 focus-within:border-fuchsia-400 focus-within:ring-4 focus-within:ring-fuchsia-500/10 transition-all">
                         <textarea
                           value={newMessage}
@@ -1752,14 +1783,38 @@ export default function App() {
                      </div>
                      <span className="text-5xl">🪙</span>
                    </div>
-                   <div className="grid grid-cols-3 gap-4">
-                     {[500, 1200, 2500].map(amt => (
-                       <button key={amt} onClick={() => requestCoinCheckout(amt)} disabled={coinCheckoutLoading} className="py-4 bg-white border border-slate-200 hover:border-emerald-400 rounded-2xl font-bold text-slate-800 flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-50">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     {[
+                       { amount: 500, label: 'Başlangıç', bonus: '+0 bonus', price: '₺99' },
+                       { amount: 1200, label: 'Popüler Paket', bonus: '+120 bonus', price: '₺199', popular: true },
+                       { amount: 2500, label: 'Power Paket', bonus: '+400 bonus', price: '₺349' },
+                     ].map((pkg) => (
+                       <button key={pkg.amount} onClick={() => requestCoinCheckout(pkg.amount)} disabled={coinCheckoutLoading} className={`relative py-4 bg-white border rounded-2xl font-bold text-slate-800 flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-50 ${pkg.popular ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-slate-200 hover:border-emerald-300'}`}>
+                         {pkg.popular && <span className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black">En Popüler</span>}
                          <span className="text-emerald-500 text-xl">💎</span>
-                         <span>{amt} Jeton</span>
+                         <span>{pkg.amount} Jeton</span>
+                         <span className="text-xs text-slate-500">{pkg.label}</span>
+                         <span className="text-xs font-bold text-emerald-700">{pkg.bonus}</span>
+                         <span className="text-sm font-black text-slate-900">{pkg.price}</span>
                        </button>
                      ))}
                    </div>
+
+                   {coinSuccessGuideOpen && (
+                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                       <div className="flex items-start justify-between gap-4">
+                         <div>
+                           <p className="text-sm font-black text-emerald-800">Satın alma başarılı 🎉 Jetonla neler yapabilirsin?</p>
+                           <ul className="mt-2 text-xs text-emerald-900 list-disc pl-4 space-y-1">
+                             <li>Yeni bir profile mesaj gönder: -{COIN_COST_PER_MESSAGE} jeton</li>
+                             <li>Kalp/selam reaksiyonu gönder: -{COIN_COST_PER_MESSAGE} jeton</li>
+                             <li>Daha hızlı eşleşme için aktif sohbet başlat</li>
+                           </ul>
+                         </div>
+                         <button onClick={() => setCoinSuccessGuideOpen(false)} className="text-emerald-700 font-bold text-sm">Kapat</button>
+                       </div>
+                     </div>
+                   )}
                    
                    {/* TEST PURCHASE BUTTON */}
                    <div className="mt-8 pt-6 border-t border-slate-100">

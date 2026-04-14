@@ -117,6 +117,15 @@ export default function App() {
   const [coinCheckoutLoading, setCoinCheckoutLoading] = useState(false);
   const [coinSpendFeedback, setCoinSpendFeedback] = useState('');
   const [coinSuccessGuideOpen, setCoinSuccessGuideOpen] = useState(false);
+  const [threadOpsByKey, setThreadOpsByKey] = useState({});
+  const [threadTimeline, setThreadTimeline] = useState([]);
+  const [threadFilter, setThreadFilter] = useState({ waitingOnly: false, slaRisk: false, unassigned: false, blacklist: false });
+  const [threadSortMode, setThreadSortMode] = useState('sla_unread_recent');
+  const [bulkPriority, setBulkPriority] = useState('');
+  const [bulkAssignTo, setBulkAssignTo] = useState('');
+  const [bulkFollowUpDate, setBulkFollowUpDate] = useState('');
+  const [bulkBlacklistMode, setBulkBlacklistMode] = useState('ignore');
+  const [bulkStatusTag, setBulkStatusTag] = useState('');
   const [paymentSettings, setPaymentSettings] = useState({ provider: '', webhook_url: DEFAULT_CHECKOUT_ENDPOINT, is_active: false });
   const [hourKey, setHourKey] = useState(() => new Date().toISOString().slice(0, 13));
   
@@ -141,13 +150,40 @@ export default function App() {
   const selectedThreadProfile = useMemo(() => (selectedThread ? profileById[selectedThread.virtual_profile_id] : null), [selectedThread, profileById]);
   
   const sortedIncomingThreads = useMemo(() => {
-    return [...incomingThreads].sort((a, b) => {
-      const waitA = a.last_sender_role === 'member' ? 1 : 0;
-      const waitB = b.last_sender_role === 'member' ? 1 : 0;
-      if (waitA !== waitB) return waitB - waitA;
+    const now = Date.now();
+    const filtered = [...incomingThreads].filter((thread) => {
+      const key = threadKey(thread.member_id, thread.virtual_profile_id);
+      const ops = threadOpsByKey[key] || {};
+      const waitMin = thread.last_message_at ? (now - new Date(thread.last_message_at).getTime()) / 60000 : 0;
+      const unread = adminUnreadByThread[key] || 0;
+      if (threadFilter.waitingOnly && thread.last_sender_role !== 'member' && unread <= 0) return false;
+      if (threadFilter.slaRisk && waitMin < 15) return false;
+      if (threadFilter.unassigned && ops.assigned_admin) return false;
+      if (threadFilter.blacklist && !ops.blacklisted) return false;
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      const keyA = threadKey(a.member_id, a.virtual_profile_id);
+      const keyB = threadKey(b.member_id, b.virtual_profile_id);
+      const unreadA = adminUnreadByThread[keyA] || 0;
+      const unreadB = adminUnreadByThread[keyB] || 0;
+      const waitMinA = a.last_message_at ? (now - new Date(a.last_message_at).getTime()) / 60000 : 0;
+      const waitMinB = b.last_message_at ? (now - new Date(b.last_message_at).getTime()) / 60000 : 0;
+
+      if (threadSortMode === 'unread') {
+        if (unreadA !== unreadB) return unreadB - unreadA;
+      } else if (threadSortMode === 'sla') {
+        if (waitMinA !== waitMinB) return waitMinB - waitMinA;
+      } else if (threadSortMode === 'recent') {
+        return new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0);
+      } else {
+        if (waitMinA !== waitMinB) return waitMinB - waitMinA;
+        if (unreadA !== unreadB) return unreadB - unreadA;
+      }
       return new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0);
     });
-  }, [incomingThreads]);
+  }, [incomingThreads, threadOpsByKey, adminUnreadByThread, threadFilter, threadSortMode]);
 
   const slaStats = useMemo(() => {
     const waiting = incomingThreads.filter((t) => t.last_sender_role === 'member' || (adminUnreadByThread[threadKey(t.member_id, t.virtual_profile_id)] || 0) > 0);
@@ -442,11 +478,17 @@ export default function App() {
   }, [isAdmin, selectedThread, sortedIncomingThreads]);
 
   useEffect(() => {
+    if (!isAdmin) return;
+    fetchThreadOperations();
+  }, [isAdmin, incomingThreads]);
+
+  useEffect(() => {
     if (!isAdmin || !selectedThread) return;
     fetchThreadMessages(selectedThread.member_id, selectedThread.virtual_profile_id);
     fetchQuickFacts(selectedThread.member_id, selectedThread.virtual_profile_id);
     fetchMemberProfile(selectedThread.member_id);
     fetchMemberModeration(selectedThread.member_id);
+    fetchThreadOperations();
   }, [isAdmin, selectedThread]);
 
   useEffect(() => {
@@ -846,6 +888,65 @@ export default function App() {
     } catch (error) { setStatus(error.message); }
   }
 
+  async function fetchThreadOperations() {
+    if (!isAdmin) return;
+    const { data, error } = await supabase
+      .from('thread_events')
+      .select('member_id, virtual_profile_id, event_type, meta, created_at')
+      .order('created_at', { ascending: true })
+      .limit(1000);
+    if (error) return;
+
+    const ops = {};
+    const selectedKey = selectedThread ? threadKey(selectedThread.member_id, selectedThread.virtual_profile_id) : null;
+    const timelineRows = [];
+
+    (data || []).forEach((row) => {
+      const key = threadKey(row.member_id, row.virtual_profile_id);
+      if (!ops[key]) ops[key] = {};
+      if (row.event_type === 'thread_ops_update') {
+        ops[key] = { ...ops[key], ...(row.meta || {}) };
+      }
+      if (selectedKey && key === selectedKey && ['status_change', 'bulk_sent', 'admin_reply', 'thread_ops_update'].includes(row.event_type)) {
+        timelineRows.push(row);
+      }
+    });
+
+    setThreadOpsByKey(ops);
+    if (selectedKey) setThreadTimeline(timelineRows.slice(-20).reverse());
+  }
+
+  async function applyBulkThreadOps() {
+    const selectedKeys = Object.keys(selectedThreadKeys).filter((k) => selectedThreadKeys[k]);
+    if (!selectedKeys.length) return setStatus('Önce thread seçmelisin.');
+    const payload = {};
+    if (bulkPriority) payload.priority = bulkPriority;
+    if (bulkAssignTo.trim()) payload.assigned_admin = bulkAssignTo.trim();
+    if (bulkFollowUpDate) payload.follow_up_at = `${bulkFollowUpDate}T09:00:00.000Z`;
+    if (bulkBlacklistMode !== 'ignore') payload.blacklisted = bulkBlacklistMode === 'true';
+    if (bulkStatusTag) payload.status_tag = bulkStatusTag;
+    if (!Object.keys(payload).length) return setStatus('Toplu işlem için en az bir alan seç.');
+
+    const rows = selectedKeys.map((key) => {
+      const [member_id, virtual_profile_id] = key.split('::');
+      return { member_id, virtual_profile_id, event_type: 'thread_ops_update', meta: payload };
+    });
+    try {
+      await insertRows('thread_events', rows);
+      if (bulkStatusTag) {
+        await Promise.all(selectedKeys.map(async (key) => {
+          const [member_id, virtual_profile_id] = key.split('::');
+          await updateRows('admin_threads', { status_tag: bulkStatusTag }, (q) => q.eq('member_id', member_id).eq('virtual_profile_id', virtual_profile_id));
+        }));
+      }
+      setStatus(`${rows.length} thread için operasyon güncellendi.`);
+      fetchIncomingThreads();
+      fetchThreadOperations();
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   async function recordEngagement(eventType, memberId, virtualProfileId, meta = {}) {
     try { await supabase.from('engagement_events').insert({ event_type: eventType, member_id: memberId, virtual_profile_id: virtualProfileId, meta }); } catch {}
   }
@@ -1044,6 +1145,9 @@ export default function App() {
       member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, sender_role: 'virtual', content: adminReply.trim(), seen_by_member: false, seen_by_admin: true,
     });
     if (error) return setStatus(error.message);
+    try {
+      await insertRows('thread_events', { member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, event_type: 'admin_reply', meta: { preview: adminReply.trim().slice(0, 80) } });
+    } catch {}
     recordEngagement('admin_reply', selectedThread.member_id, selectedThread.virtual_profile_id, { source: 'admin_reply' });
     setAdminReply(''); setAiSuggestions([]); fetchIncomingThreads(); fetchThreadMessages(selectedThread.member_id, selectedThread.virtual_profile_id); fetchEngagementInsights();
     setStatus('Yanıt gönderildi.');
@@ -1256,11 +1360,25 @@ export default function App() {
             <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Mesaj Bekleyenler</h3>
+                 <div className="grid grid-cols-2 gap-2 mb-3">
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>Yanıt Bekleyen</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>SLA Riski</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>Atanmamış</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}>Blacklist</button>
+                 </div>
+                 <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs font-semibold">
+                   <option value="sla_unread_recent">SLA + Unread + Son Mesaj</option>
+                   <option value="sla">SLA (Bekleme Süresi)</option>
+                   <option value="unread">Unread</option>
+                   <option value="recent">Son Mesaj</option>
+                 </select>
                  <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef}>
                    {sortedIncomingThreads.map((thread) => {
                      const isWait = thread.last_sender_role === 'member';
                      const isActive = selectedThread?.member_id === thread.member_id && selectedThread?.virtual_profile_id === thread.virtual_profile_id;
                      const key = threadKey(thread.member_id, thread.virtual_profile_id);
+                     const ops = threadOpsByKey[key] || {};
+                     const waitMin = thread.last_message_at ? Math.max(0, (Date.now() - new Date(thread.last_message_at).getTime()) / 60000) : 0;
                      return (
                        <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}>
                          <div className="relative flex-shrink-0">
@@ -1272,6 +1390,11 @@ export default function App() {
                          <div className="flex-1 min-w-0">
                            <p className="text-sm font-bold text-slate-900 truncate">{thread.member_username} <span className="text-slate-400 font-normal">→ {thread.virtual_name}</span></p>
                            <p className="text-xs text-slate-500 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
+                           <div className="flex flex-wrap gap-1 mt-1">
+                             {ops.priority && <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ops.priority === 'high' ? 'bg-rose-100 text-rose-700' : ops.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{ops.priority.toUpperCase()}</span>}
+                             {ops.assigned_admin ? <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">{ops.assigned_admin}</span> : <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-600">Atanmamış</span>}
+                             {waitMin >= 15 && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">SLA Risk</span>}
+                           </div>
                          </div>
                          <input
                            type="checkbox"
@@ -1301,6 +1424,27 @@ export default function App() {
                     <button onClick={sendBulkTemplate} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm">Seçili Sohbetlere Gönder</button>
                     <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold">Temizle</button>
                   </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                    <h4 className="text-xs font-bold text-slate-500 uppercase">Toplu Operasyon</h4>
+                    <select value={bulkPriority} onChange={(e) => setBulkPriority(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                      <option value="">Öncelik Seç</option>
+                      <option value="high">Yüksek</option>
+                      <option value="medium">Orta</option>
+                      <option value="low">Düşük</option>
+                    </select>
+                    <select value={bulkStatusTag} onChange={(e) => setBulkStatusTag(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                      <option value="">Tag Atama (opsiyonel)</option>
+                      {THREAD_TAGS.map((tag) => <option key={`bulk-${tag}`} value={tag}>{tag}</option>)}
+                    </select>
+                    <input value={bulkAssignTo} onChange={(e) => setBulkAssignTo(e.target.value)} placeholder="Sorumlu admin (örn: ayse_admin)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs" />
+                    <input value={bulkFollowUpDate} onChange={(e) => setBulkFollowUpDate(e.target.value)} type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs" />
+                    <select value={bulkBlacklistMode} onChange={(e) => setBulkBlacklistMode(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                      <option value="ignore">Blacklist Değiştirme</option>
+                      <option value="true">Blacklist: Aç</option>
+                      <option value="false">Blacklist: Kapat</option>
+                    </select>
+                    <button onClick={applyBulkThreadOps} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm">Tag/Öncelik/Takip Tarihi Uygula</button>
+                  </div>
                </div>
 
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
@@ -1320,6 +1464,12 @@ export default function App() {
                       <div>
                         <h2 className="text-lg font-bold text-slate-900">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
                         <p className="text-xs font-semibold text-emerald-600">Sanal Profil Modülü</p>
+                        {selectedThread && (
+                          <p className="text-[11px] font-semibold text-slate-500 mt-1">
+                            Öncelik: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.priority || '-')} •
+                            Sorumlu: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.assigned_admin || 'Atanmamış')}
+                          </p>
+                        )}
                       </div>
                       <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="bg-white border border-slate-200 text-sm font-medium py-1.5 px-3 rounded-lg outline-none">
                         {THREAD_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
@@ -1551,6 +1701,19 @@ export default function App() {
                     <h4 className="text-sm font-bold text-slate-900 mb-2">Hızlı Notlar (Quick Facts)</h4>
                     <textarea value={quickFactsText} onChange={(e)=>setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none min-h-[100px]" />
                     <button onClick={saveQuickFacts} className="w-full mt-2 bg-slate-900 text-white text-xs font-bold py-2 rounded-lg">Notları Kaydet</button>
+                 </div>
+
+                 <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 mb-2">İşlem Geçmişi (Timeline)</h4>
+                    <div className="space-y-2 max-h-52 overflow-y-auto">
+                      {threadTimeline.length ? threadTimeline.map((event, idx) => (
+                        <div key={`${event.event_type}-${event.created_at}-${idx}`} className="text-xs rounded-lg border border-slate-200 bg-slate-50 p-2">
+                          <p className="font-bold text-slate-700">{event.event_type}</p>
+                          <p className="text-slate-500 mt-0.5">{formatTime(event.created_at)}</p>
+                          {!!event.meta && <p className="text-slate-600 mt-1 break-words">{JSON.stringify(event.meta)}</p>}
+                        </div>
+                      )) : <p className="text-xs text-slate-400">Henüz kayıtlı olay yok.</p>}
+                    </div>
                  </div>
               </aside>
             )}

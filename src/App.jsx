@@ -97,7 +97,18 @@ export default function App() {
     activeThreadsToday: 0,
     avgResponseMinToday: 0,
   });
+  const [previousAdminStats, setPreviousAdminStats] = useState({
+    totalMessagesToday: 0,
+    memberMessagesToday: 0,
+    adminRepliesToday: 0,
+    respondedThreadsToday: 0,
+    newMembersToday: 0,
+    activeThreadsToday: 0,
+    avgResponseMinToday: 0,
+  });
+  const [statsAlerts, setStatsAlerts] = useState([]);
   const [statsRange, setStatsRange] = useState('daily');
+  const [statsDateRange, setStatsDateRange] = useState({ from: '', to: '' });
   const [adminTab, setAdminTab] = useState('chat');
   const [quickFactsText, setQuickFactsText] = useState('');
   const [cityFilter, setCityFilter] = useState('');
@@ -285,6 +296,49 @@ export default function App() {
   }, [memberProfile.photo_url, memberProfile.hobbies, onboardingActionCount]);
 
   function threadKey(memberId, profileId) { return `${memberId}::${profileId}`; }
+  function pctChange(current, previous) {
+    if (!previous) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  }
+
+  function buildStatsSnapshot(messages = [], members = []) {
+    const memberMessages = messages.filter((m) => m.sender_role === 'member');
+    const adminReplies = messages.filter((m) => m.sender_role === 'virtual');
+    const activeThreadKeys = new Set(messages.map((m) => `${m.member_id}::${m.virtual_profile_id}`));
+    const respondedThreadKeys = new Set();
+    const responseMinutes = [];
+
+    const grouped = new Map();
+    messages.forEach((m) => {
+      const key = `${m.member_id}::${m.virtual_profile_id}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(m);
+    });
+
+    grouped.forEach((rows, key) => {
+      rows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      let lastMemberTs = null;
+      rows.forEach((row) => {
+        if (row.sender_role === 'member') lastMemberTs = row.created_at;
+        else if (row.sender_role === 'virtual' && lastMemberTs) {
+          respondedThreadKeys.add(key);
+          const diffMin = (new Date(row.created_at).getTime() - new Date(lastMemberTs).getTime()) / 60000;
+          if (diffMin >= 0) responseMinutes.push(diffMin);
+          lastMemberTs = null;
+        }
+      });
+    });
+
+    return {
+      totalMessagesToday: messages.length,
+      memberMessagesToday: memberMessages.length,
+      adminRepliesToday: adminReplies.length,
+      respondedThreadsToday: respondedThreadKeys.size,
+      newMembersToday: members.length,
+      activeThreadsToday: activeThreadKeys.size,
+      avgResponseMinToday: responseMinutes.length ? responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length : 0,
+    };
+  }
 
   async function handleSignIn() {
     if (mode === 'admin') {
@@ -499,7 +553,7 @@ export default function App() {
   useEffect(() => {
     if (!isAdmin || adminTab !== 'stats') return;
     fetchAdminStats();
-  }, [isAdmin, adminTab, incomingThreads, threadMessages, statsRange]);
+  }, [isAdmin, adminTab, incomingThreads, threadMessages, statsRange, statsDateRange.from, statsDateRange.to]);
 
   useEffect(() => {
     if (!isAdmin || adminTab !== 'settings') return;
@@ -979,52 +1033,45 @@ export default function App() {
 
   async function fetchAdminStats() {
     if (!isAdmin) return;
-    const start = new Date();
-    if (statsRange === 'daily') start.setHours(0, 0, 0, 0);
-    else if (statsRange === 'weekly') start.setDate(start.getDate() - 7);
-    else start.setMonth(start.getMonth() - 1);
-    const startIso = start.toISOString();
+    const end = statsDateRange.to ? new Date(`${statsDateRange.to}T23:59:59.999Z`) : new Date();
+    const start = statsDateRange.from
+      ? new Date(`${statsDateRange.from}T00:00:00.000Z`)
+      : (() => {
+          const d = new Date();
+          if (statsRange === 'daily') d.setHours(0, 0, 0, 0);
+          else if (statsRange === 'weekly') d.setDate(d.getDate() - 7);
+          else d.setMonth(d.getMonth() - 1);
+          return d;
+        })();
 
-    const [{ data: todayMessages, error: msgErr }, { data: todayMembers, error: memberErr }] = await Promise.all([
-      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', startIso),
-      supabase.from('members').select('id, created_at').gte('created_at', startIso),
+    const periodMs = Math.max(end.getTime() - start.getTime(), 3600000);
+    const prevEnd = new Date(start.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - periodMs);
+
+    const [
+      { data: currentMessages, error: msgErr1 },
+      { data: currentMembers, error: memErr1 },
+      { data: prevMessages, error: msgErr2 },
+      { data: prevMembers, error: memErr2 },
+    ] = await Promise.all([
+      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()),
+      supabase.from('members').select('id, created_at').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()),
+      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', prevStart.toISOString()).lte('created_at', prevEnd.toISOString()),
+      supabase.from('members').select('id, created_at').gte('created_at', prevStart.toISOString()).lte('created_at', prevEnd.toISOString()),
     ]);
 
-    if (msgErr || memberErr) return setStatus(msgErr?.message || memberErr?.message || 'Stats alınamadı.');
+    if (msgErr1 || memErr1 || msgErr2 || memErr2) return setStatus(msgErr1?.message || memErr1?.message || msgErr2?.message || memErr2?.message || 'Stats alınamadı.');
 
-    const messages = todayMessages || [];
-    const memberMessages = messages.filter((m) => m.sender_role === 'member');
-    const adminReplies = messages.filter((m) => m.sender_role === 'virtual');
-    const activeThreadKeys = new Set(messages.map((m) => `${m.member_id}::${m.virtual_profile_id}`));
-    const respondedThreadKeys = new Set();
-    const responseMinutes = [];
+    const currentSnapshot = buildStatsSnapshot(currentMessages || [], currentMembers || []);
+    const prevSnapshot = buildStatsSnapshot(prevMessages || [], prevMembers || []);
+    setAdminStats(currentSnapshot);
+    setPreviousAdminStats(prevSnapshot);
 
-    const grouped = new Map();
-    messages.forEach((m) => {
-      const key = `${m.member_id}::${m.virtual_profile_id}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(m);
-    });
-
-    grouped.forEach((rows, key) => {
-      rows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      let lastMemberTs = null;
-      rows.forEach((row) => {
-        if (row.sender_role === 'member') lastMemberTs = row.created_at;
-        else if (row.sender_role === 'virtual' && lastMemberTs) {
-          respondedThreadKeys.add(key);
-          const diffMin = (new Date(row.created_at).getTime() - new Date(lastMemberTs).getTime()) / 60000;
-          if (diffMin >= 0) responseMinutes.push(diffMin);
-          lastMemberTs = null;
-        }
-      });
-    });
-
-    setAdminStats({
-      totalMessagesToday: messages.length, memberMessagesToday: memberMessages.length, adminRepliesToday: adminReplies.length,
-      respondedThreadsToday: respondedThreadKeys.size, newMembersToday: (todayMembers || []).length, activeThreadsToday: activeThreadKeys.size,
-      avgResponseMinToday: responseMinutes.length ? responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length : 0,
-    });
+    const alerts = [];
+    if (currentSnapshot.avgResponseMinToday > 7) alerts.push('⚠️ Ortalama cevap süresi 7 dk üzerinde.');
+    if (currentSnapshot.respondedThreadsToday < Math.max(1, Math.floor(currentSnapshot.activeThreadsToday * 0.5))) alerts.push('⚠️ Cevaplanan thread oranı düşük görünüyor.');
+    if (currentSnapshot.memberMessagesToday > 0 && currentSnapshot.adminRepliesToday === 0) alerts.push('⚠️ Üye mesajı var ama admin cevabı yok.');
+    setStatsAlerts(alerts);
   }
 
   async function fetchThreadMessages(memberId, profileId) {
@@ -1032,6 +1079,27 @@ export default function App() {
     if (error) return setStatus(error.message);
     setThreadMessages(data || []);
     await supabase.from('messages').update({ seen_by_admin: true, seen_by_admin_at: new Date().toISOString() }).eq('member_id', memberId).eq('virtual_profile_id', profileId).eq('sender_role', 'member').eq('seen_by_admin', false);
+  }
+
+  function exportStatsCsv() {
+    const rows = [
+      ['metric', 'current', 'previous', 'pct_change'],
+      ['total_messages', adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday, pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)],
+      ['member_messages', adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday, pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)],
+      ['admin_replies', adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday, pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)],
+      ['responded_threads', adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday, pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)],
+      ['new_members', adminStats.newMembersToday, previousAdminStats.newMembersToday, pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)],
+      ['active_threads', adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday, pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)],
+      ['avg_response_min', adminStats.avgResponseMinToday.toFixed(2), previousAdminStats.avgResponseMinToday.toFixed(2), pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)],
+    ];
+    const csv = rows.map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flort_stats_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function fetchQuickFacts(memberId, profileId) {
@@ -1524,20 +1592,37 @@ export default function App() {
                {adminTab === 'stats' && (
                  <div className="p-6 md:p-8 overflow-y-auto">
                     <h2 className="text-2xl font-bold mb-4 text-slate-900">Stats Dashboard ({statsRange === 'daily' ? 'Günlük' : statsRange === 'weekly' ? 'Haftalık' : 'Aylık'})</h2>
-                    <div className="flex gap-2 mb-5">
+                    <div className="flex flex-wrap gap-2 mb-4">
                       <button onClick={() => setStatsRange('daily')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'daily' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Günlük</button>
                       <button onClick={() => setStatsRange('weekly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Haftalık</button>
                       <button onClick={() => setStatsRange('monthly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Aylık</button>
+                      <button onClick={exportStatsCsv} className="px-4 py-2 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white">CSV Export</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                      <label className="text-xs font-bold text-slate-500">Tarih Başlangıç
+                        <input type="date" value={statsDateRange.from} onChange={(e) => setStatsDateRange((p) => ({ ...p, from: e.target.value }))} className="mt-1 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                      </label>
+                      <label className="text-xs font-bold text-slate-500">Tarih Bitiş
+                        <input type="date" value={statsDateRange.to} onChange={(e) => setStatsDateRange((p) => ({ ...p, to: e.target.value }))} className="mt-1 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                      </label>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-slate-900">{adminStats.memberMessagesToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-slate-900">{adminStats.adminRepliesToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.respondedThreadsToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-slate-900">{adminStats.newMembersToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.activeThreadsToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 md:col-span-2 xl:col-span-1"><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-slate-900">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-slate-900">{adminStats.memberMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-slate-900">{adminStats.adminRepliesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.respondedThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-slate-900">{adminStats.newMembersToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.activeThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)}%</p></div>
+                       <div className={`p-4 rounded-2xl border md:col-span-2 xl:col-span-1 ${adminStats.avgResponseMinToday > 7 ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-slate-900">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p><p className={`text-xs font-bold ${pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday) <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)}%</p></div>
                     </div>
+                    {!!statsAlerts.length && (
+                      <div className="mb-4 p-4 rounded-2xl border border-rose-200 bg-rose-50">
+                        <h4 className="text-sm font-black text-rose-700 mb-2">Kritik Alarm</h4>
+                        <ul className="text-xs text-rose-700 list-disc pl-4 space-y-1">
+                          {statsAlerts.map((alert) => <li key={alert}>{alert}</li>)}
+                        </ul>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
                         <h3 className="text-xl font-bold text-slate-800 mb-2">Engagement (7 Gün)</h3>
@@ -1547,6 +1632,14 @@ export default function App() {
                             <span key={item.label} className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">{item.label} ({item.count})</span>
                           )) : <span className="text-sm text-slate-400">Veri yok</span>}
                         </div>
+                        <div className="mt-3 flex items-end gap-1 h-16">
+                          {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
+                            <div key={`chart-${item.label}`} className="flex-1 flex flex-col items-center justify-end gap-1">
+                              <div className="w-full rounded-t bg-indigo-400/80" style={{ height: `${Math.max(10, item.count * 8)}px` }} />
+                              <span className="text-[10px] text-slate-500">{item.label.slice(0, 2)}</span>
+                            </div>
+                          )) : <span className="text-xs text-slate-400">Mini chart için veri yok.</span>}
+                        </div>
                       </div>
                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
                         <h3 className="text-xl font-bold text-slate-800 mb-2">İlgi gören profiller:</h3>
@@ -1554,11 +1647,18 @@ export default function App() {
                           {engagementInsights.topProfiles.length ? engagementInsights.topProfiles.map((item) => (
                             <div key={item.name} className="flex items-center justify-between rounded-xl bg-white border border-slate-200 px-3 py-2 text-sm">
                               <span className="font-semibold text-slate-700">{item.name}</span>
-                              <span className="font-black text-indigo-700">{item.count}</span>
+                              <span className="font-black text-indigo-700">{item.count} <span className="text-[10px] text-slate-400">▁▃▆█</span></span>
                             </div>
                           )) : <span className="text-sm text-slate-400">Veri yok</span>}
                         </div>
                       </div>
+                    </div>
+                    <div className="mt-4 p-4 rounded-2xl border border-emerald-200 bg-emerald-50">
+                      <h4 className="text-sm font-black text-emerald-800 mb-2">Önerilen Aksiyonlar</h4>
+                      <ul className="text-xs text-emerald-900 list-disc pl-4 space-y-1">
+                        <li>Bulk mesajı şu saatlerde dene: {engagementInsights.topHours.map((h) => h.label).join(', ') || 'veri yok'}.</li>
+                        <li>Boost önceliği verilecek profiller: {engagementInsights.topProfiles.map((p) => p.name).join(', ') || 'veri yok'}.</li>
+                      </ul>
                     </div>
                  </div>
                )}

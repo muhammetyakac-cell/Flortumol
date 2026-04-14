@@ -1424,10 +1424,14 @@ export default function App() {
 
         /* ======================= USER SCREEN: DISCOVER ======================= */
         : userView === 'discover' ? (
-          <div className="space-y-6">
-            <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm">
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
-              <p className="text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
+          <div className="space-y-6 relative">
+            <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
+            <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
+
+            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
+              <h2 className="relative text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
+              <p className="relative text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
               <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
@@ -1442,6 +1446,21 @@ export default function App() {
                   <p className="text-lg font-black text-emerald-900">Jeton satın al →</p>
                 </button>
               </div>
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Aktif Profil</p>
+                  <p className="text-xl font-black text-slate-900">{activeProfileCount}</p>
+                </div>
+                <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Okunmamış Mesaj</p>
+                  <p className="text-xl font-black text-rose-600">{totalUnreadCount}</p>
+                </div>
+                <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Uyum Skoru (Örnek)</p>
+                  <p className="text-xl font-black text-indigo-700">%{interestScore}</p>
+                </div>
+              </div>
               
               <div className="mt-8 flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
@@ -1454,9 +1473,34 @@ export default function App() {
               </div>
             </div>
 
+            {!!spotlightProfiles.length && (
+              <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-black text-slate-900">Bugünün Öne Çıkanları</h3>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700">Editor's pick</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {spotlightProfiles.slice(0, 3).map((profile) => (
+                    <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-40 text-left border border-slate-200 shadow-sm">
+                      {profile.photo_url ? (
+                        <img src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-white font-bold text-base truncate">{profile.name}, {profile.age}</p>
+                        <p className="text-slate-200 text-xs truncate">{profile.city || 'Belirtilmemiş'} • Mesaja başla</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {discoverProfiles.map(profile => (
-                <div key={profile.id} className="group bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
+                <div key={profile.id} className="group bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                   <div className="relative h-72 overflow-hidden bg-slate-100">
                     {profile.photo_url ? (
                       <img src={profile.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />

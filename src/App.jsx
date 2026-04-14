@@ -944,6 +944,16 @@ export default function App() {
 
   async function saveQuickFacts() {
     if (!selectedThread) return;
+    const safeBase = String(selectedThread.member_username || 'legacy_user').trim().toLowerCase().replace(/[^a-z0-9_]+/g, '_').slice(0, 20) || 'legacy_user';
+    const fallbackUsername = `${safeBase}_${String(selectedThread.member_id).replace(/-/g, '').slice(0, 8)}`;
+    const exists = await supabase.from('members').select('id').eq('id', selectedThread.member_id).maybeSingle();
+    if (!exists.data?.id) {
+      const ensureResult = await supabase.from('members').upsert(
+        { id: selectedThread.member_id, username: fallbackUsername, password_hash: `legacy-${String(selectedThread.member_id).replace(/-/g, '')}` },
+        { onConflict: 'id' }
+      );
+      if (ensureResult.error) return setStatus(`Üye kaydı doğrulanamadı: ${ensureResult.error.message}`);
+    }
     const { error } = await supabase.from('thread_quick_facts').upsert({ member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, notes: quickFactsText }, { onConflict: 'member_id,virtual_profile_id' });
     if (error) return setStatus(error.message);
     setStatus('Quick Facts kaydedildi.');
@@ -951,18 +961,21 @@ export default function App() {
 
   async function fetchRegisteredMembers() {
     setLoadingMembers(true);
-    const { data, error } = await supabase.from('member_profiles').select('member_id, coin_balance, contact_phone, updated_at').order('updated_at', { ascending: false });
-    
-    // members tablosundan isimleri de çekmek için (eğer public.members'a erişim varsa) ek query yapabilirsin, şimdilik UI'da kullanıcı olarak göstereceğiz
+    const [{ data: profiles, error: profileError }, { data: members, error: memberError }] = await Promise.all([
+      supabase.from('member_profiles').select('member_id, coin_balance, contact_phone, updated_at').order('updated_at', { ascending: false }),
+      supabase.from('members').select('id, username, created_at'),
+    ]);
     setLoadingMembers(false);
-    if (error) return setStatus('Üye listesi alınamadı: ' + error.message);
-    
-    setRegisteredMembers((data || []).map((p) => ({ 
+    if (profileError || memberError) return setStatus('Üye listesi alınamadı: ' + (profileError?.message || memberError?.message));
+
+    const usernameById = Object.fromEntries((members || []).map((m) => [m.id, m.username]));
+    const createdAtById = Object.fromEntries((members || []).map((m) => [m.id, m.created_at]));
+    setRegisteredMembers((profiles || []).map((p) => ({ 
       id: p.member_id, 
-      username: p.member_id, // Gerçek username'i members tablosundan almak gerekebilir, şimdilik ID'yi gösteriyoruz
+      username: usernameById[p.member_id] || p.member_id,
       coin_balance: p.coin_balance, 
       contact_phone: p.contact_phone, 
-      created_at: p.updated_at 
+      created_at: createdAtById[p.member_id] || p.updated_at 
     })));
   }
 
@@ -1469,7 +1482,7 @@ export default function App() {
                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
                     <h4 className="text-sm font-bold text-slate-900 mb-3">Sohbet Edilen Kullanıcı</h4>
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200 border border-slate-200">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm">
                         {selectedMemberProfile?.photo_url ? <img src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
                       </div>
                       <div className="min-w-0">

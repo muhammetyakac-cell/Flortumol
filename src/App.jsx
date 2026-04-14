@@ -1189,12 +1189,13 @@ export default function App() {
             <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Mesaj Bekleyenler</h3>
-                 <div className="flex flex-col gap-2">
+                 <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef}>
                    {sortedIncomingThreads.map((thread) => {
                      const isWait = thread.last_sender_role === 'member';
                      const isActive = selectedThread?.member_id === thread.member_id && selectedThread?.virtual_profile_id === thread.virtual_profile_id;
+                     const key = threadKey(thread.member_id, thread.virtual_profile_id);
                      return (
-                       <button key={threadKey(thread.member_id, thread.virtual_profile_id)} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}>
+                       <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}>
                          <div className="relative flex-shrink-0">
                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700">
                              {thread.virtual_name?.slice(0, 1)}
@@ -1205,10 +1206,34 @@ export default function App() {
                            <p className="text-sm font-bold text-slate-900 truncate">{thread.member_username} <span className="text-slate-400 font-normal">→ {thread.virtual_name}</span></p>
                            <p className="text-xs text-slate-500 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
                          </div>
+                         <input
+                           type="checkbox"
+                           checked={!!selectedThreadKeys[key]}
+                           onChange={(e) => {
+                             const checked = e.target.checked;
+                             setSelectedThreadKeys((prev) => ({ ...prev, [key]: checked }));
+                           }}
+                           onClick={(e) => e.stopPropagation()}
+                           className="w-4 h-4 accent-indigo-600"
+                           title="Toplu mesaj için seç"
+                         />
                        </button>
                      )
                    })}
                  </div>
+               </div>
+
+               <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Toplu Mesaj</h3>
+                  <p className="text-xs text-slate-500 mb-3">Seçili sohbetlere tek seferde gönderim yap. Önce üstten sohbetleri işaretle.</p>
+                  <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full mb-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    {BULK_TEMPLATES.map((tmpl) => <option key={tmpl} value={tmpl}>{tmpl}</option>)}
+                  </select>
+                  <textarea value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm min-h-[90px] focus:outline-none focus:border-indigo-400" placeholder="Toplu mesaj şablonu..." />
+                  <div className="mt-3 flex items-center gap-2">
+                    <button onClick={sendBulkTemplate} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm">Seçili Sohbetlere Gönder</button>
+                    <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold">Temizle</button>
+                  </div>
                </div>
 
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
@@ -1281,12 +1306,42 @@ export default function App() {
                {/* Admin Center - Stats Tab */}
                {adminTab === 'stats' && (
                  <div className="p-6 md:p-8 overflow-y-auto">
-                    <h2 className="text-2xl font-bold mb-6 text-slate-900">Sistem İstatistikleri</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <h2 className="text-2xl font-bold mb-4 text-slate-900">Stats Dashboard ({statsRange === 'daily' ? 'Günlük' : statsRange === 'weekly' ? 'Haftalık' : 'Aylık'})</h2>
+                    <div className="flex gap-2 mb-5">
+                      <button onClick={() => setStatsRange('daily')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'daily' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Günlük</button>
+                      <button onClick={() => setStatsRange('weekly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Haftalık</button>
+                      <button onClick={() => setStatsRange('monthly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Aylık</button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-indigo-600">{adminStats.activeThreadsToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye</p><p className="text-3xl font-black text-emerald-600">{adminStats.newMembersToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Yanıt Hızı</p><p className="text-3xl font-black text-amber-600">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-slate-900">{adminStats.memberMessagesToday}</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-slate-900">{adminStats.adminRepliesToday}</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.respondedThreadsToday}</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-slate-900">{adminStats.newMembersToday}</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.activeThreadsToday}</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 md:col-span-2 xl:col-span-1"><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-slate-900">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">Engagement (7 Gün)</h3>
+                        <p className="text-sm font-semibold text-slate-600 mb-2">Yoğun saatler:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
+                            <span key={item.label} className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">{item.label} ({item.count})</span>
+                          )) : <span className="text-sm text-slate-400">Veri yok</span>}
+                        </div>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">İlgi gören profiller:</h3>
+                        <div className="space-y-2">
+                          {engagementInsights.topProfiles.length ? engagementInsights.topProfiles.map((item) => (
+                            <div key={item.name} className="flex items-center justify-between rounded-xl bg-white border border-slate-200 px-3 py-2 text-sm">
+                              <span className="font-semibold text-slate-700">{item.name}</span>
+                              <span className="font-black text-indigo-700">{item.count}</span>
+                            </div>
+                          )) : <span className="text-sm text-slate-400">Veri yok</span>}
+                        </div>
+                      </div>
                     </div>
                  </div>
                )}
@@ -1409,6 +1464,20 @@ export default function App() {
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">{selectedThreadProfile?.name || '-'}</h3>
                     <p className="text-sm text-slate-500 font-medium">{selectedThreadProfile?.age} • {selectedThreadProfile?.city}</p>
+                 </div>
+
+                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 mb-3">Sohbet Edilen Kullanıcı</h4>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200 border border-slate-200">
+                        {selectedMemberProfile?.photo_url ? <img src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 truncate">{selectedThread?.member_username || 'Kullanıcı seçilmedi'}</p>
+                        <p className="text-xs text-slate-500">{selectedMemberProfile?.age ? `${selectedMemberProfile.age} yaş` : '-'} • {selectedMemberProfile?.city || 'Şehir yok'}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-3">Hobiler: <span className="font-medium text-slate-700">{selectedMemberProfile?.hobbies || 'Belirtilmemiş'}</span></p>
                  </div>
                  
                  <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">

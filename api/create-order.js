@@ -1,7 +1,19 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 export default async function handler(req, res) {
-  // Sadece POST isteklerini kabul ediyoruz
+  // 1. ADIM: CORS Başlıklarını Ayarla
+  // Mobil uygulamalar (Capacitor) farklı originlerden gelebilir, '*' hepsine izin verir.
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // 2. ADIM: Preflight (Ön Kontrol) İsteğini Yanıtla
+  // Tarayıcılar asıl istekten önce "OPTIONS" ile izin var mı diye sorar.
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  // 3. ADIM: Sadece POST İsteklerini Kabul Et
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
@@ -10,45 +22,38 @@ export default async function handler(req, res) {
   try {
     const { memberId, coinAmount, price, successUrl, cancelUrl } = req.body;
 
-    // 1. DOĞRULAMA: Gerekli veriler gelmiş mi?
+    // Doğrulama
     if (!memberId || !coinAmount || !price) {
       return res.status(400).json({ error: 'Eksik bilgi: memberId, coinAmount ve price gerekli.' });
     }
 
-    // 2. STRIPE CHECKOUT SESSION OLUŞTURMA
-    // Bu yapı, kullanıcının önüne güvenli bir ödeme sayfası açar.
+    // Stripe Checkout Session Oluşturma
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
-            currency: 'try', // Veya 'usd'
+            currency: 'try',
             product_data: {
               name: `${coinAmount} Coin Paketi`,
               description: `${coinAmount} adet uygulama içi kredi.`,
             },
-            unit_amount: Math.round(price * 100), // Kuruş cinsinden (Örn: 10.50 TL -> 1050)
+            unit_amount: Math.round(price * 100),
           },
           quantity: 1,
         },
       ],
       mode: 'payment',
-      
-      // SENİN WEBHOOK'UNUN BEKLEDİĞİ KRİTİK ALANLAR BURASI:
-      // Webhook kodu 'member_id' ve 'coin_amount' isimlerini arıyor.
       metadata: {
         member_id: String(memberId), 
         coin_amount: String(coinAmount),
       },
-      // Webhook'ta fallback olarak client_reference_id kullanılmış, onu da dolduralım:
       client_reference_id: String(memberId),
-
       success_url: successUrl || `https://flortumol.vercel.app/success`,
       cancel_url: cancelUrl || `https://flortumol.vercel.app/cancel`,
     });
 
-    // 3. MOBİL UYGULAMAYA SESSION ID VE URL GÖNDER
-    // Mobil uygulama bu URL'yi açarak ödeme sayfasına gider.
+    // Sonuç Gönder
     res.status(200).json({ 
       id: session.id, 
       url: session.url 

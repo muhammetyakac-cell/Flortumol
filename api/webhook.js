@@ -1,17 +1,23 @@
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
+// Vercel'in ham veriyi (raw body) bozmasını engelliyoruz (Stripe imzası için şart)
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
+// Yardımcı JSON ve CORS yanıt fonksiyonu
 function json(res, status, payload) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, stripe-signature');
   res.status(status).setHeader('Content-Type', 'application/json');
   return res.end(JSON.stringify(payload));
 }
 
+// Ham veriyi okuma fonksiyonu
 async function getRawBody(req) {
   const chunks = [];
   for await (const chunk of req) {
@@ -20,6 +26,7 @@ async function getRawBody(req) {
   return Buffer.concat(chunks);
 }
 
+// Stripe imza doğrulama fonksiyonu
 function verifyStripeSignature(rawBody, signatureHeader, webhookSecret) {
   if (!signatureHeader || !webhookSecret) return false;
 
@@ -72,11 +79,16 @@ async function fetchStripeEvent(eventId, stripeSecretKey) {
   return data;
 }
 
-function buildFallbackUsername(memberId) {
-  return `member_${String(memberId).replace(/-/g, '').slice(0, 16)}`;
-}
-
 export default async function handler(req, res) {
+  // 1. ADIM: CORS Preflight (Ön Kontrol)
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, stripe-signature');
+    return res.status(200).end();
+  }
+
+  // 2. ADIM: Metod Kontrolü
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return json(res, 405, { ok: false, error: 'method_not_allowed' });
@@ -92,6 +104,7 @@ export default async function handler(req, res) {
     const rawBody = await getRawBody(req);
     const signatureHeader = req.headers['stripe-signature'];
 
+    // İmza Doğrulama
     const isValidSignature = verifyStripeSignature(rawBody, signatureHeader, webhookSecret);
     let event = {};
     try {
@@ -104,6 +117,7 @@ export default async function handler(req, res) {
       if (!stripeSecretKey || !event?.id) {
         return json(res, 400, { ok: false, error: 'invalid_stripe_signature' });
       }
+      // Fallback: Stripe API'den olayı teyit et
       const canonicalEvent = await fetchStripeEvent(event.id, stripeSecretKey);
       if (!canonicalEvent?.id || canonicalEvent.id !== event.id) {
         return json(res, 400, { ok: false, error: 'stripe_event_validation_failed' });
@@ -132,7 +146,8 @@ export default async function handler(req, res) {
       return json(res, 400, { ok: false, error: 'coin_amount_invalid' });
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL;
+    // ENV ismini Supabase URL'si için sağlama aldık (VITE_ prefixli olma ihtimaline karşı)
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL; 
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!supabaseUrl || !serviceRoleKey) {
       return json(res, 500, { ok: false, error: 'server_env_missing' });
@@ -142,18 +157,11 @@ export default async function handler(req, res) {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { error: memberEnsureError } = await admin
-      .from('members')
-      .upsert({
-        id: memberId,
-        username: buildFallbackUsername(memberId),
-        password_hash: 'managed_by_payment_webhook',
-      }, { onConflict: 'id' });
+    // =========================================================================
+    // DÜZELTİLEN KISIM: 'members' TABLOSUNA DOKUNMUYORUZ!
+    // =========================================================================
 
-    if (memberEnsureError) {
-      return json(res, 500, { ok: false, error: `member_ensure_failed:${memberEnsureError.message}` });
-    }
-
+    // Eski bakiyeyi oku
     const { data: profile, error: readError } = await admin
       .from('member_profiles')
       .select('coin_balance')
@@ -164,9 +172,11 @@ export default async function handler(req, res) {
       return json(res, 500, { ok: false, error: `profile_read_failed:${readError.message}` });
     }
 
+    // Bakiyeyi hesapla (Eğer daha önce hiç coin almamışsa 0 kabul et ve üstüne ekle)
     const currentBalance = Number(profile?.coin_balance || 0);
     const nextBalance = currentBalance + coinAmount;
 
+    // Sadece 'member_profiles' tablosuna yeni bakiyeyi yaz (Görünümü günceller)
     const { error: writeError } = await admin
       .from('member_profiles')
       .upsert({ member_id: memberId, coin_balance: nextBalance }, { onConflict: 'member_id' });
@@ -175,6 +185,7 @@ export default async function handler(req, res) {
       return json(res, 500, { ok: false, error: `profile_update_failed:${writeError.message}` });
     }
 
+    // Başarılı yanıt
     return json(res, 200, {
       ok: true,
       coins_added: coinAmount,

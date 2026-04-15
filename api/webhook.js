@@ -79,8 +79,8 @@ export default async function handler(req, res) {
 
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
-    // CRITICAL FIX: 'members' tablosuna dokunmuyoruz.
-    // Sadece 'member_profiles' tablosunda coin güncellemesi yapıyoruz.
+    // FIX: Sadece 'member_profiles' tablosunda coin güncellemesi yapıyoruz.
+    // 'members' tablosuna dokunmuyoruz ki kullanıcı adı ve şifre ezilmesin.
 
     // 1. Mevcut bakiyeyi al
     const { data: profile, error: readError } = await admin
@@ -90,19 +90,26 @@ export default async function handler(req, res) {
       .maybeSingle();
 
     if (readError) throw readError;
+    if (!profile) {
+       // Eğer profil hiç yoksa (beklenmedik bir durum), yeni profil oluştur
+       const { error: insertError } = await admin
+         .from('member_profiles')
+         .insert({ member_id: memberId, coin_balance: coinAmount });
+       if (insertError) throw insertError;
+    } else {
+       // 2. Yeni bakiyeyi hesapla ve mevcut profili güncelle
+       const currentBalance = Number(profile?.coin_balance || 0);
+       const nextBalance = currentBalance + coinAmount;
 
-    // 2. Yeni bakiyeyi hesapla ve sadece profili güncelle
-    const currentBalance = Number(profile?.coin_balance || 0);
-    const nextBalance = currentBalance + coinAmount;
+       const { error: writeError } = await admin
+         .from('member_profiles')
+         .update({ coin_balance: nextBalance })
+         .eq('member_id', memberId);
 
-    const { error: writeError } = await admin
-      .from('member_profiles')
-      .update({ coin_balance: nextBalance })
-      .eq('member_id', memberId);
+       if (writeError) throw writeError;
+    }
 
-    if (writeError) throw writeError;
-
-    return json(res, 200, { ok: true, added: coinAmount, total: nextBalance });
+    return json(res, 200, { ok: true, added: coinAmount });
   } catch (error) {
     return json(res, 500, { ok: false, error: error.message });
   }

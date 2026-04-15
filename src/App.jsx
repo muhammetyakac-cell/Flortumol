@@ -52,9 +52,15 @@ function buildHourlyOnlineMap(profiles, hourKey) {
 export default function App() {
   const [status, setStatus] = useState('');
   const { user: memberSession, loading: authLoading, signIn: supabaseSignIn, signUp: supabaseSignUp, signOut: supabaseSignOut } = useAuth();
-  const [mode, setMode] = useState('user');
+  const [mode, setMode] = useState(() => {
+    if (typeof window === 'undefined') return 'user';
+    return window.localStorage.getItem('flort_login_mode') || 'user';
+  });
   const [authForm, setAuthForm] = useState({ username: '', password: '' });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('flort_admin_session') === 'true';
+  });
   const loading = authLoading; 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
@@ -91,7 +97,18 @@ export default function App() {
     activeThreadsToday: 0,
     avgResponseMinToday: 0,
   });
+  const [previousAdminStats, setPreviousAdminStats] = useState({
+    totalMessagesToday: 0,
+    memberMessagesToday: 0,
+    adminRepliesToday: 0,
+    respondedThreadsToday: 0,
+    newMembersToday: 0,
+    activeThreadsToday: 0,
+    avgResponseMinToday: 0,
+  });
+  const [statsAlerts, setStatsAlerts] = useState([]);
   const [statsRange, setStatsRange] = useState('daily');
+  const [statsDateRange, setStatsDateRange] = useState({ from: '', to: '' });
   const [adminTab, setAdminTab] = useState('chat');
   const [quickFactsText, setQuickFactsText] = useState('');
   const [cityFilter, setCityFilter] = useState('');
@@ -109,6 +126,17 @@ export default function App() {
   const [coinPurchaseModalOpen, setCoinPurchaseModalOpen] = useState(false);
   const [zeroCoinPromptDismissed, setZeroCoinPromptDismissed] = useState(false);
   const [coinCheckoutLoading, setCoinCheckoutLoading] = useState(false);
+  const [coinSpendFeedback, setCoinSpendFeedback] = useState('');
+  const [coinSuccessGuideOpen, setCoinSuccessGuideOpen] = useState(false);
+  const [threadOpsByKey, setThreadOpsByKey] = useState({});
+  const [threadTimeline, setThreadTimeline] = useState([]);
+  const [threadFilter, setThreadFilter] = useState({ waitingOnly: false, slaRisk: false, unassigned: false, blacklist: false });
+  const [threadSortMode, setThreadSortMode] = useState('sla_unread_recent');
+  const [bulkPriority, setBulkPriority] = useState('');
+  const [bulkAssignTo, setBulkAssignTo] = useState('');
+  const [bulkFollowUpDate, setBulkFollowUpDate] = useState('');
+  const [bulkBlacklistMode, setBulkBlacklistMode] = useState('ignore');
+  const [bulkStatusTag, setBulkStatusTag] = useState('');
   const [paymentSettings, setPaymentSettings] = useState({ provider: '', webhook_url: DEFAULT_CHECKOUT_ENDPOINT, is_active: false });
   const [hourKey, setHourKey] = useState(() => new Date().toISOString().slice(0, 13));
   
@@ -133,13 +161,40 @@ export default function App() {
   const selectedThreadProfile = useMemo(() => (selectedThread ? profileById[selectedThread.virtual_profile_id] : null), [selectedThread, profileById]);
   
   const sortedIncomingThreads = useMemo(() => {
-    return [...incomingThreads].sort((a, b) => {
-      const waitA = a.last_sender_role === 'member' ? 1 : 0;
-      const waitB = b.last_sender_role === 'member' ? 1 : 0;
-      if (waitA !== waitB) return waitB - waitA;
+    const now = Date.now();
+    const filtered = [...incomingThreads].filter((thread) => {
+      const key = threadKey(thread.member_id, thread.virtual_profile_id);
+      const ops = threadOpsByKey[key] || {};
+      const waitMin = thread.last_message_at ? (now - new Date(thread.last_message_at).getTime()) / 60000 : 0;
+      const unread = adminUnreadByThread[key] || 0;
+      if (threadFilter.waitingOnly && thread.last_sender_role !== 'member' && unread <= 0) return false;
+      if (threadFilter.slaRisk && waitMin < 15) return false;
+      if (threadFilter.unassigned && ops.assigned_admin) return false;
+      if (threadFilter.blacklist && !ops.blacklisted) return false;
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      const keyA = threadKey(a.member_id, a.virtual_profile_id);
+      const keyB = threadKey(b.member_id, b.virtual_profile_id);
+      const unreadA = adminUnreadByThread[keyA] || 0;
+      const unreadB = adminUnreadByThread[keyB] || 0;
+      const waitMinA = a.last_message_at ? (now - new Date(a.last_message_at).getTime()) / 60000 : 0;
+      const waitMinB = b.last_message_at ? (now - new Date(b.last_message_at).getTime()) / 60000 : 0;
+
+      if (threadSortMode === 'unread') {
+        if (unreadA !== unreadB) return unreadB - unreadA;
+      } else if (threadSortMode === 'sla') {
+        if (waitMinA !== waitMinB) return waitMinB - waitMinA;
+      } else if (threadSortMode === 'recent') {
+        return new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0);
+      } else {
+        if (waitMinA !== waitMinB) return waitMinB - waitMinA;
+        if (unreadA !== unreadB) return unreadB - unreadA;
+      }
       return new Date(b.last_message_at || 0) - new Date(a.last_message_at || 0);
     });
-  }, [incomingThreads]);
+  }, [incomingThreads, threadOpsByKey, adminUnreadByThread, threadFilter, threadSortMode]);
 
   const slaStats = useMemo(() => {
     const waiting = incomingThreads.filter((t) => t.last_sender_role === 'member' || (adminUnreadByThread[threadKey(t.member_id, t.virtual_profile_id)] || 0) > 0);
@@ -241,11 +296,55 @@ export default function App() {
   }, [memberProfile.photo_url, memberProfile.hobbies, onboardingActionCount]);
 
   function threadKey(memberId, profileId) { return `${memberId}::${profileId}`; }
+  function pctChange(current, previous) {
+    if (!previous) return current > 0 ? 100 : 0;
+    return ((current - previous) / previous) * 100;
+  }
+
+  function buildStatsSnapshot(messages = [], members = []) {
+    const memberMessages = messages.filter((m) => m.sender_role === 'member');
+    const adminReplies = messages.filter((m) => m.sender_role === 'virtual');
+    const activeThreadKeys = new Set(messages.map((m) => `${m.member_id}::${m.virtual_profile_id}`));
+    const respondedThreadKeys = new Set();
+    const responseMinutes = [];
+
+    const grouped = new Map();
+    messages.forEach((m) => {
+      const key = `${m.member_id}::${m.virtual_profile_id}`;
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key).push(m);
+    });
+
+    grouped.forEach((rows, key) => {
+      rows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      let lastMemberTs = null;
+      rows.forEach((row) => {
+        if (row.sender_role === 'member') lastMemberTs = row.created_at;
+        else if (row.sender_role === 'virtual' && lastMemberTs) {
+          respondedThreadKeys.add(key);
+          const diffMin = (new Date(row.created_at).getTime() - new Date(lastMemberTs).getTime()) / 60000;
+          if (diffMin >= 0) responseMinutes.push(diffMin);
+          lastMemberTs = null;
+        }
+      });
+    });
+
+    return {
+      totalMessagesToday: messages.length,
+      memberMessagesToday: memberMessages.length,
+      adminRepliesToday: adminReplies.length,
+      respondedThreadsToday: respondedThreadKeys.size,
+      newMembersToday: members.length,
+      activeThreadsToday: activeThreadKeys.size,
+      avgResponseMinToday: responseMinutes.length ? responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length : 0,
+    };
+  }
 
   async function handleSignIn() {
     if (mode === 'admin') {
       if ([ADMIN_PASSWORD, ADMIN_PASSWORD2].includes(authForm.password)) {
         setIsAdmin(true);
+        if (typeof window !== 'undefined') window.localStorage.setItem('flort_admin_session', 'true');
         setStatus('Admin girişi başarılı.');
       } else {
         setStatus('Admin şifresi hatalı.');
@@ -339,6 +438,36 @@ export default function App() {
     window.localStorage.setItem('admin_notification_sound_enabled', String(notificationSoundEnabled));
   }, [notificationSoundEnabled]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('flort_login_mode', mode);
+  }, [mode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem('flort_admin_session', String(isAdmin));
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (!status) return;
+    const timeoutId = window.setTimeout(() => setStatus(''), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [status]);
+
+  useEffect(() => {
+    if (!coinSpendFeedback) return;
+    const timeoutId = window.setTimeout(() => setCoinSpendFeedback(''), 1800);
+    return () => window.clearTimeout(timeoutId);
+  }, [coinSpendFeedback]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || isAdmin) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('coin_purchase') === 'success' || params.get('payment') === 'success') {
+      setCoinSuccessGuideOpen(true);
+    }
+  }, [isAdmin]);
+
   function getAudioUrl(content) {
     const clean = (content || '').trim();
     if (!clean) return null;
@@ -403,11 +532,17 @@ export default function App() {
   }, [isAdmin, selectedThread, sortedIncomingThreads]);
 
   useEffect(() => {
+    if (!isAdmin) return;
+    fetchThreadOperations();
+  }, [isAdmin, incomingThreads]);
+
+  useEffect(() => {
     if (!isAdmin || !selectedThread) return;
     fetchThreadMessages(selectedThread.member_id, selectedThread.virtual_profile_id);
     fetchQuickFacts(selectedThread.member_id, selectedThread.virtual_profile_id);
     fetchMemberProfile(selectedThread.member_id);
     fetchMemberModeration(selectedThread.member_id);
+    fetchThreadOperations();
   }, [isAdmin, selectedThread]);
 
   useEffect(() => {
@@ -418,7 +553,7 @@ export default function App() {
   useEffect(() => {
     if (!isAdmin || adminTab !== 'stats') return;
     fetchAdminStats();
-  }, [isAdmin, adminTab, incomingThreads, threadMessages, statsRange]);
+  }, [isAdmin, adminTab, incomingThreads, threadMessages, statsRange, statsDateRange.from, statsDateRange.to]);
 
   useEffect(() => {
     if (!isAdmin || adminTab !== 'settings') return;
@@ -680,6 +815,7 @@ export default function App() {
     if (error) { setStatus(error.message); return false; }
 
     setMemberProfile((prev) => ({ ...prev, coin_balance: nextBalance }));
+    setCoinSpendFeedback(`-${amount} jeton`);
     return true;
   }
 
@@ -693,12 +829,19 @@ export default function App() {
     const { error } = await supabase.from('member_profiles').upsert({ member_id: memberSession.id, coin_balance: nextBalance, contact_phone: memberProfile.contact_phone }, { onConflict: 'member_id' });
     if (error) return setStatus(error.message);
     setMemberProfile((prev) => ({ ...prev, coin_balance: nextBalance }));
+    setCoinSuccessGuideOpen(true);
     setStatus('Test satın alma başarılı: 5000 jeton yüklendi.');
   }
 
   async function handleSignOut() {
-    if (isAdmin) { setIsAdmin(false); setStatus('Admin çıkışı yapıldı.'); } 
-    else { await supabaseSignOut(); }
+    if (isAdmin) {
+      setIsAdmin(false);
+      if (typeof window !== 'undefined') window.localStorage.removeItem('flort_admin_session');
+      setStatus('Admin çıkışı yapıldı.');
+    } else {
+      await supabaseSignOut();
+      setStatus('Çıkış yapıldı.');
+    }
     
     setSelectedProfileId(null);
     setMessages([]);
@@ -799,6 +942,65 @@ export default function App() {
     } catch (error) { setStatus(error.message); }
   }
 
+  async function fetchThreadOperations() {
+    if (!isAdmin) return;
+    const { data, error } = await supabase
+      .from('thread_events')
+      .select('member_id, virtual_profile_id, event_type, meta, created_at')
+      .order('created_at', { ascending: true })
+      .limit(1000);
+    if (error) return;
+
+    const ops = {};
+    const selectedKey = selectedThread ? threadKey(selectedThread.member_id, selectedThread.virtual_profile_id) : null;
+    const timelineRows = [];
+
+    (data || []).forEach((row) => {
+      const key = threadKey(row.member_id, row.virtual_profile_id);
+      if (!ops[key]) ops[key] = {};
+      if (row.event_type === 'thread_ops_update') {
+        ops[key] = { ...ops[key], ...(row.meta || {}) };
+      }
+      if (selectedKey && key === selectedKey && ['status_change', 'bulk_sent', 'admin_reply', 'thread_ops_update'].includes(row.event_type)) {
+        timelineRows.push(row);
+      }
+    });
+
+    setThreadOpsByKey(ops);
+    if (selectedKey) setThreadTimeline(timelineRows.slice(-20).reverse());
+  }
+
+  async function applyBulkThreadOps() {
+    const selectedKeys = Object.keys(selectedThreadKeys).filter((k) => selectedThreadKeys[k]);
+    if (!selectedKeys.length) return setStatus('Önce thread seçmelisin.');
+    const payload = {};
+    if (bulkPriority) payload.priority = bulkPriority;
+    if (bulkAssignTo.trim()) payload.assigned_admin = bulkAssignTo.trim();
+    if (bulkFollowUpDate) payload.follow_up_at = `${bulkFollowUpDate}T09:00:00.000Z`;
+    if (bulkBlacklistMode !== 'ignore') payload.blacklisted = bulkBlacklistMode === 'true';
+    if (bulkStatusTag) payload.status_tag = bulkStatusTag;
+    if (!Object.keys(payload).length) return setStatus('Toplu işlem için en az bir alan seç.');
+
+    const rows = selectedKeys.map((key) => {
+      const [member_id, virtual_profile_id] = key.split('::');
+      return { member_id, virtual_profile_id, event_type: 'thread_ops_update', meta: payload };
+    });
+    try {
+      await insertRows('thread_events', rows);
+      if (bulkStatusTag) {
+        await Promise.all(selectedKeys.map(async (key) => {
+          const [member_id, virtual_profile_id] = key.split('::');
+          await updateRows('admin_threads', { status_tag: bulkStatusTag }, (q) => q.eq('member_id', member_id).eq('virtual_profile_id', virtual_profile_id));
+        }));
+      }
+      setStatus(`${rows.length} thread için operasyon güncellendi.`);
+      fetchIncomingThreads();
+      fetchThreadOperations();
+    } catch (error) {
+      setStatus(error.message);
+    }
+  }
+
   async function recordEngagement(eventType, memberId, virtualProfileId, meta = {}) {
     try { await supabase.from('engagement_events').insert({ event_type: eventType, member_id: memberId, virtual_profile_id: virtualProfileId, meta }); } catch {}
   }
@@ -831,52 +1033,45 @@ export default function App() {
 
   async function fetchAdminStats() {
     if (!isAdmin) return;
-    const start = new Date();
-    if (statsRange === 'daily') start.setHours(0, 0, 0, 0);
-    else if (statsRange === 'weekly') start.setDate(start.getDate() - 7);
-    else start.setMonth(start.getMonth() - 1);
-    const startIso = start.toISOString();
+    const end = statsDateRange.to ? new Date(`${statsDateRange.to}T23:59:59.999Z`) : new Date();
+    const start = statsDateRange.from
+      ? new Date(`${statsDateRange.from}T00:00:00.000Z`)
+      : (() => {
+          const d = new Date();
+          if (statsRange === 'daily') d.setHours(0, 0, 0, 0);
+          else if (statsRange === 'weekly') d.setDate(d.getDate() - 7);
+          else d.setMonth(d.getMonth() - 1);
+          return d;
+        })();
 
-    const [{ data: todayMessages, error: msgErr }, { data: todayMembers, error: memberErr }] = await Promise.all([
-      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', startIso),
-      supabase.from('members').select('id, created_at').gte('created_at', startIso),
+    const periodMs = Math.max(end.getTime() - start.getTime(), 3600000);
+    const prevEnd = new Date(start.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - periodMs);
+
+    const [
+      { data: currentMessages, error: msgErr1 },
+      { data: currentMembers, error: memErr1 },
+      { data: prevMessages, error: msgErr2 },
+      { data: prevMembers, error: memErr2 },
+    ] = await Promise.all([
+      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()),
+      supabase.from('members').select('id, created_at').gte('created_at', start.toISOString()).lte('created_at', end.toISOString()),
+      supabase.from('messages').select('member_id, virtual_profile_id, sender_role, created_at').gte('created_at', prevStart.toISOString()).lte('created_at', prevEnd.toISOString()),
+      supabase.from('members').select('id, created_at').gte('created_at', prevStart.toISOString()).lte('created_at', prevEnd.toISOString()),
     ]);
 
-    if (msgErr || memberErr) return setStatus(msgErr?.message || memberErr?.message || 'Stats alınamadı.');
+    if (msgErr1 || memErr1 || msgErr2 || memErr2) return setStatus(msgErr1?.message || memErr1?.message || msgErr2?.message || memErr2?.message || 'Stats alınamadı.');
 
-    const messages = todayMessages || [];
-    const memberMessages = messages.filter((m) => m.sender_role === 'member');
-    const adminReplies = messages.filter((m) => m.sender_role === 'virtual');
-    const activeThreadKeys = new Set(messages.map((m) => `${m.member_id}::${m.virtual_profile_id}`));
-    const respondedThreadKeys = new Set();
-    const responseMinutes = [];
+    const currentSnapshot = buildStatsSnapshot(currentMessages || [], currentMembers || []);
+    const prevSnapshot = buildStatsSnapshot(prevMessages || [], prevMembers || []);
+    setAdminStats(currentSnapshot);
+    setPreviousAdminStats(prevSnapshot);
 
-    const grouped = new Map();
-    messages.forEach((m) => {
-      const key = `${m.member_id}::${m.virtual_profile_id}`;
-      if (!grouped.has(key)) grouped.set(key, []);
-      grouped.get(key).push(m);
-    });
-
-    grouped.forEach((rows, key) => {
-      rows.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      let lastMemberTs = null;
-      rows.forEach((row) => {
-        if (row.sender_role === 'member') lastMemberTs = row.created_at;
-        else if (row.sender_role === 'virtual' && lastMemberTs) {
-          respondedThreadKeys.add(key);
-          const diffMin = (new Date(row.created_at).getTime() - new Date(lastMemberTs).getTime()) / 60000;
-          if (diffMin >= 0) responseMinutes.push(diffMin);
-          lastMemberTs = null;
-        }
-      });
-    });
-
-    setAdminStats({
-      totalMessagesToday: messages.length, memberMessagesToday: memberMessages.length, adminRepliesToday: adminReplies.length,
-      respondedThreadsToday: respondedThreadKeys.size, newMembersToday: (todayMembers || []).length, activeThreadsToday: activeThreadKeys.size,
-      avgResponseMinToday: responseMinutes.length ? responseMinutes.reduce((a, b) => a + b, 0) / responseMinutes.length : 0,
-    });
+    const alerts = [];
+    if (currentSnapshot.avgResponseMinToday > 7) alerts.push('⚠️ Ortalama cevap süresi 7 dk üzerinde.');
+    if (currentSnapshot.respondedThreadsToday < Math.max(1, Math.floor(currentSnapshot.activeThreadsToday * 0.5))) alerts.push('⚠️ Cevaplanan thread oranı düşük görünüyor.');
+    if (currentSnapshot.memberMessagesToday > 0 && currentSnapshot.adminRepliesToday === 0) alerts.push('⚠️ Üye mesajı var ama admin cevabı yok.');
+    setStatsAlerts(alerts);
   }
 
   async function fetchThreadMessages(memberId, profileId) {
@@ -884,6 +1079,27 @@ export default function App() {
     if (error) return setStatus(error.message);
     setThreadMessages(data || []);
     await supabase.from('messages').update({ seen_by_admin: true, seen_by_admin_at: new Date().toISOString() }).eq('member_id', memberId).eq('virtual_profile_id', profileId).eq('sender_role', 'member').eq('seen_by_admin', false);
+  }
+
+  function exportStatsCsv() {
+    const rows = [
+      ['metric', 'current', 'previous', 'pct_change'],
+      ['total_messages', adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday, pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)],
+      ['member_messages', adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday, pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)],
+      ['admin_replies', adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday, pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)],
+      ['responded_threads', adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday, pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)],
+      ['new_members', adminStats.newMembersToday, previousAdminStats.newMembersToday, pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)],
+      ['active_threads', adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday, pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)],
+      ['avg_response_min', adminStats.avgResponseMinToday.toFixed(2), previousAdminStats.avgResponseMinToday.toFixed(2), pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)],
+    ];
+    const csv = rows.map((row) => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flort_stats_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   async function fetchQuickFacts(memberId, profileId) {
@@ -944,25 +1160,36 @@ export default function App() {
 
   async function saveQuickFacts() {
     if (!selectedThread) return;
-    const { error } = await supabase.from('thread_quick_facts').upsert({ member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, notes: quickFactsText }, { onConflict: 'member_id,virtual_profile_id' });
+    const { error } = await supabase.rpc('admin_upsert_thread_quick_facts', {
+      p_member_id: selectedThread.member_id,
+      p_virtual_profile_id: selectedThread.virtual_profile_id,
+      p_notes: quickFactsText,
+      p_fallback_username: selectedThread.member_username || null,
+    });
+    if (error && String(error.message || '').includes('admin_upsert_thread_quick_facts')) {
+      return setStatus('DB fonksiyonu eksik: supabase/fix_thread_quick_facts_fk.sql scriptini çalıştırmalısın.');
+    }
     if (error) return setStatus(error.message);
     setStatus('Quick Facts kaydedildi.');
   }
 
   async function fetchRegisteredMembers() {
     setLoadingMembers(true);
-    const { data, error } = await supabase.from('member_profiles').select('member_id, coin_balance, contact_phone, updated_at').order('updated_at', { ascending: false });
-    
-    // members tablosundan isimleri de çekmek için (eğer public.members'a erişim varsa) ek query yapabilirsin, şimdilik UI'da kullanıcı olarak göstereceğiz
+    const [{ data: profiles, error: profileError }, { data: members, error: memberError }] = await Promise.all([
+      supabase.from('member_profiles').select('member_id, coin_balance, contact_phone, updated_at').order('updated_at', { ascending: false }),
+      supabase.from('members').select('id, username, created_at'),
+    ]);
     setLoadingMembers(false);
-    if (error) return setStatus('Üye listesi alınamadı: ' + error.message);
-    
-    setRegisteredMembers((data || []).map((p) => ({ 
+    if (profileError || memberError) return setStatus('Üye listesi alınamadı: ' + (profileError?.message || memberError?.message));
+
+    const usernameById = Object.fromEntries((members || []).map((m) => [m.id, m.username]));
+    const createdAtById = Object.fromEntries((members || []).map((m) => [m.id, m.created_at]));
+    setRegisteredMembers((profiles || []).map((p) => ({ 
       id: p.member_id, 
-      username: p.member_id, // Gerçek username'i members tablosundan almak gerekebilir, şimdilik ID'yi gösteriyoruz
+      username: usernameById[p.member_id] || p.member_id,
       coin_balance: p.coin_balance, 
       contact_phone: p.contact_phone, 
-      created_at: p.updated_at 
+      created_at: createdAtById[p.member_id] || p.updated_at 
     })));
   }
 
@@ -986,6 +1213,9 @@ export default function App() {
       member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, sender_role: 'virtual', content: adminReply.trim(), seen_by_member: false, seen_by_admin: true,
     });
     if (error) return setStatus(error.message);
+    try {
+      await insertRows('thread_events', { member_id: selectedThread.member_id, virtual_profile_id: selectedThread.virtual_profile_id, event_type: 'admin_reply', meta: { preview: adminReply.trim().slice(0, 80) } });
+    } catch {}
     recordEngagement('admin_reply', selectedThread.member_id, selectedThread.virtual_profile_id, { source: 'admin_reply' });
     setAdminReply(''); setAiSuggestions([]); fetchIncomingThreads(); fetchThreadMessages(selectedThread.member_id, selectedThread.virtual_profile_id); fetchEngagementInsights();
     setStatus('Yanıt gönderildi.');
@@ -1060,14 +1290,24 @@ export default function App() {
             )}
 
             {loggedIn && !isAdmin && (
-              <nav className="hidden md:flex bg-white/50 p-1 rounded-2xl border border-slate-200/50 shadow-sm backdrop-blur-md">
-                {['discover', 'chat', 'profile', 'coins'].map((view) => (
-                  <button key={view} onClick={() => setUserView(view)} className={`relative px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all duration-300 ${userView === view ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
-                    {view === 'discover' ? 'Keşfet' : view === 'chat' ? 'Mesajlar' : view === 'profile' ? 'Profil' : 'Cüzdan'}
-                    {view === 'chat' && totalUnreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
-                  </button>
-                ))}
-              </nav>
+              <div className="hidden md:flex items-center gap-3">
+                <nav className="flex bg-white/50 p-1 rounded-2xl border border-slate-200/50 shadow-sm backdrop-blur-md">
+                  {['discover', 'chat', 'profile', 'coins'].map((view) => (
+                    <button key={view} onClick={() => setUserView(view)} className={`relative px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all duration-300 ${userView === view ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}>
+                      {view === 'discover' ? 'Keşfet' : view === 'chat' ? 'Mesajlar' : view === 'profile' ? 'Profil' : 'Cüzdan'}
+                      {view === 'chat' && totalUnreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
+                    </button>
+                  ))}
+                </nav>
+                <button
+                  onClick={() => setUserView('coins')}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm font-extrabold shadow-sm hover:bg-amber-100 transition-colors"
+                  title="Jeton bakiyesi"
+                >
+                  <span aria-hidden="true">🪙</span>
+                  <span>{memberProfile.coin_balance ?? 0} jeton</span>
+                </button>
+              </div>
             )}
 
             <div className="flex items-center gap-3 border-l pl-4 border-slate-200/20">
@@ -1095,6 +1335,15 @@ export default function App() {
             <button onClick={() => setUserView((!onboardingState.hasPhoto || !onboardingState.hasHobbies) ? 'profile' : 'discover')} className="bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm">
               Adımı Tamamla
             </button>
+          </div>
+        </div>
+      )}
+
+      {loggedIn && !isAdmin && Number(memberProfile.coin_balance ?? 0) < COIN_COST_PER_MESSAGE * 2 && (
+        <div className="bg-rose-50 border-b border-rose-200 px-6 py-3">
+          <div className="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-bold text-rose-700">Düşük bakiye: Mesaj/reaksiyon başı {COIN_COST_PER_MESSAGE} jeton. Kalan bakiye ile en fazla {Math.floor(Number(memberProfile.coin_balance ?? 0) / COIN_COST_PER_MESSAGE)} işlem yapabilirsin.</p>
+            <button onClick={() => setUserView('coins')} className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold">Jeton Yükle</button>
           </div>
         </div>
       )}
@@ -1179,12 +1428,27 @@ export default function App() {
             <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Mesaj Bekleyenler</h3>
-                 <div className="flex flex-col gap-2">
+                 <div className="grid grid-cols-2 gap-2 mb-3">
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600'}`}>Yanıt Bekleyen</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}`}>SLA Riski</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>Atanmamış</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'}`}>Blacklist</button>
+                 </div>
+                 <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs font-semibold">
+                   <option value="sla_unread_recent">SLA + Unread + Son Mesaj</option>
+                   <option value="sla">SLA (Bekleme Süresi)</option>
+                   <option value="unread">Unread</option>
+                   <option value="recent">Son Mesaj</option>
+                 </select>
+                 <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef}>
                    {sortedIncomingThreads.map((thread) => {
                      const isWait = thread.last_sender_role === 'member';
                      const isActive = selectedThread?.member_id === thread.member_id && selectedThread?.virtual_profile_id === thread.virtual_profile_id;
+                     const key = threadKey(thread.member_id, thread.virtual_profile_id);
+                     const ops = threadOpsByKey[key] || {};
+                     const waitMin = thread.last_message_at ? Math.max(0, (Date.now() - new Date(thread.last_message_at).getTime()) / 60000) : 0;
                      return (
-                       <button key={threadKey(thread.member_id, thread.virtual_profile_id)} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}>
+                       <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-50 border-slate-100 hover:border-slate-300'}`}>
                          <div className="relative flex-shrink-0">
                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700">
                              {thread.virtual_name?.slice(0, 1)}
@@ -1194,11 +1458,61 @@ export default function App() {
                          <div className="flex-1 min-w-0">
                            <p className="text-sm font-bold text-slate-900 truncate">{thread.member_username} <span className="text-slate-400 font-normal">→ {thread.virtual_name}</span></p>
                            <p className="text-xs text-slate-500 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
+                           <div className="flex flex-wrap gap-1 mt-1">
+                             {ops.priority && <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ops.priority === 'high' ? 'bg-rose-100 text-rose-700' : ops.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{ops.priority.toUpperCase()}</span>}
+                             {ops.assigned_admin ? <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">{ops.assigned_admin}</span> : <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-600">Atanmamış</span>}
+                             {waitMin >= 15 && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">SLA Risk</span>}
+                           </div>
                          </div>
+                         <input
+                           type="checkbox"
+                           checked={!!selectedThreadKeys[key]}
+                           onChange={(e) => {
+                             const checked = e.target.checked;
+                             setSelectedThreadKeys((prev) => ({ ...prev, [key]: checked }));
+                           }}
+                           onClick={(e) => e.stopPropagation()}
+                           className="w-4 h-4 accent-indigo-600"
+                           title="Toplu mesaj için seç"
+                         />
                        </button>
                      )
                    })}
                  </div>
+               </div>
+
+               <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Toplu Mesaj</h3>
+                  <p className="text-xs text-slate-500 mb-3">Seçili sohbetlere tek seferde gönderim yap. Önce üstten sohbetleri işaretle.</p>
+                  <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full mb-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    {BULK_TEMPLATES.map((tmpl) => <option key={tmpl} value={tmpl}>{tmpl}</option>)}
+                  </select>
+                  <textarea value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm min-h-[90px] focus:outline-none focus:border-indigo-400" placeholder="Toplu mesaj şablonu..." />
+                  <div className="mt-3 flex items-center gap-2">
+                    <button onClick={sendBulkTemplate} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm">Seçili Sohbetlere Gönder</button>
+                    <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold">Temizle</button>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                    <h4 className="text-xs font-bold text-slate-500 uppercase">Toplu Operasyon</h4>
+                    <select value={bulkPriority} onChange={(e) => setBulkPriority(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                      <option value="">Öncelik Seç</option>
+                      <option value="high">Yüksek</option>
+                      <option value="medium">Orta</option>
+                      <option value="low">Düşük</option>
+                    </select>
+                    <select value={bulkStatusTag} onChange={(e) => setBulkStatusTag(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                      <option value="">Tag Atama (opsiyonel)</option>
+                      {THREAD_TAGS.map((tag) => <option key={`bulk-${tag}`} value={tag}>{tag}</option>)}
+                    </select>
+                    <input value={bulkAssignTo} onChange={(e) => setBulkAssignTo(e.target.value)} placeholder="Sorumlu admin (örn: ayse_admin)" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs" />
+                    <input value={bulkFollowUpDate} onChange={(e) => setBulkFollowUpDate(e.target.value)} type="date" className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs" />
+                    <select value={bulkBlacklistMode} onChange={(e) => setBulkBlacklistMode(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                      <option value="ignore">Blacklist Değiştirme</option>
+                      <option value="true">Blacklist: Aç</option>
+                      <option value="false">Blacklist: Kapat</option>
+                    </select>
+                    <button onClick={applyBulkThreadOps} className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-sm">Tag/Öncelik/Takip Tarihi Uygula</button>
+                  </div>
                </div>
 
                <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
@@ -1218,6 +1532,12 @@ export default function App() {
                       <div>
                         <h2 className="text-lg font-bold text-slate-900">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
                         <p className="text-xs font-semibold text-emerald-600">Sanal Profil Modülü</p>
+                        {selectedThread && (
+                          <p className="text-[11px] font-semibold text-slate-500 mt-1">
+                            Öncelik: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.priority || '-')} •
+                            Sorumlu: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.assigned_admin || 'Atanmamış')}
+                          </p>
+                        )}
                       </div>
                       <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="bg-white border border-slate-200 text-sm font-medium py-1.5 px-3 rounded-lg outline-none">
                         {THREAD_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
@@ -1271,12 +1591,74 @@ export default function App() {
                {/* Admin Center - Stats Tab */}
                {adminTab === 'stats' && (
                  <div className="p-6 md:p-8 overflow-y-auto">
-                    <h2 className="text-2xl font-bold mb-6 text-slate-900">Sistem İstatistikleri</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-indigo-600">{adminStats.activeThreadsToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye</p><p className="text-3xl font-black text-emerald-600">{adminStats.newMembersToday}</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Yanıt Hızı</p><p className="text-3xl font-black text-amber-600">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p></div>
+                    <h2 className="text-2xl font-bold mb-4 text-slate-900">Stats Dashboard ({statsRange === 'daily' ? 'Günlük' : statsRange === 'weekly' ? 'Haftalık' : 'Aylık'})</h2>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <button onClick={() => setStatsRange('daily')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'daily' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Günlük</button>
+                      <button onClick={() => setStatsRange('weekly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Haftalık</button>
+                      <button onClick={() => setStatsRange('monthly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Aylık</button>
+                      <button onClick={exportStatsCsv} className="px-4 py-2 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white">CSV Export</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
+                      <label className="text-xs font-bold text-slate-500">Tarih Başlangıç
+                        <input type="date" value={statsDateRange.from} onChange={(e) => setStatsDateRange((p) => ({ ...p, from: e.target.value }))} className="mt-1 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                      </label>
+                      <label className="text-xs font-bold text-slate-500">Tarih Bitiş
+                        <input type="date" value={statsDateRange.to} onChange={(e) => setStatsDateRange((p) => ({ ...p, to: e.target.value }))} className="mt-1 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm" />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-slate-900">{adminStats.memberMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-slate-900">{adminStats.adminRepliesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.respondedThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-slate-900">{adminStats.newMembersToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.activeThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)}%</p></div>
+                       <div className={`p-4 rounded-2xl border md:col-span-2 xl:col-span-1 ${adminStats.avgResponseMinToday > 7 ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-slate-900">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p><p className={`text-xs font-bold ${pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday) <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)}%</p></div>
+                    </div>
+                    {!!statsAlerts.length && (
+                      <div className="mb-4 p-4 rounded-2xl border border-rose-200 bg-rose-50">
+                        <h4 className="text-sm font-black text-rose-700 mb-2">Kritik Alarm</h4>
+                        <ul className="text-xs text-rose-700 list-disc pl-4 space-y-1">
+                          {statsAlerts.map((alert) => <li key={alert}>{alert}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">Engagement (7 Gün)</h3>
+                        <p className="text-sm font-semibold text-slate-600 mb-2">Yoğun saatler:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
+                            <span key={item.label} className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">{item.label} ({item.count})</span>
+                          )) : <span className="text-sm text-slate-400">Veri yok</span>}
+                        </div>
+                        <div className="mt-3 flex items-end gap-1 h-16">
+                          {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
+                            <div key={`chart-${item.label}`} className="flex-1 flex flex-col items-center justify-end gap-1">
+                              <div className="w-full rounded-t bg-indigo-400/80" style={{ height: `${Math.max(10, item.count * 8)}px` }} />
+                              <span className="text-[10px] text-slate-500">{item.label.slice(0, 2)}</span>
+                            </div>
+                          )) : <span className="text-xs text-slate-400">Mini chart için veri yok.</span>}
+                        </div>
+                      </div>
+                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">İlgi gören profiller:</h3>
+                        <div className="space-y-2">
+                          {engagementInsights.topProfiles.length ? engagementInsights.topProfiles.map((item) => (
+                            <div key={item.name} className="flex items-center justify-between rounded-xl bg-white border border-slate-200 px-3 py-2 text-sm">
+                              <span className="font-semibold text-slate-700">{item.name}</span>
+                              <span className="font-black text-indigo-700">{item.count} <span className="text-[10px] text-slate-400">▁▃▆█</span></span>
+                            </div>
+                          )) : <span className="text-sm text-slate-400">Veri yok</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-4 rounded-2xl border border-emerald-200 bg-emerald-50">
+                      <h4 className="text-sm font-black text-emerald-800 mb-2">Önerilen Aksiyonlar</h4>
+                      <ul className="text-xs text-emerald-900 list-disc pl-4 space-y-1">
+                        <li>Bulk mesajı şu saatlerde dene: {engagementInsights.topHours.map((h) => h.label).join(', ') || 'veri yok'}.</li>
+                        <li>Boost önceliği verilecek profiller: {engagementInsights.topProfiles.map((p) => p.name).join(', ') || 'veri yok'}.</li>
+                      </ul>
                     </div>
                  </div>
                )}
@@ -1400,11 +1782,38 @@ export default function App() {
                     <h3 className="text-lg font-bold text-slate-900">{selectedThreadProfile?.name || '-'}</h3>
                     <p className="text-sm text-slate-500 font-medium">{selectedThreadProfile?.age} • {selectedThreadProfile?.city}</p>
                  </div>
+
+                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 mb-3">Sohbet Edilen Kullanıcı</h4>
+                    <div className="flex items-center gap-3">
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm">
+                        {selectedMemberProfile?.photo_url ? <img src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900 truncate">{selectedThread?.member_username || 'Kullanıcı seçilmedi'}</p>
+                        <p className="text-xs text-slate-500">{selectedMemberProfile?.age ? `${selectedMemberProfile.age} yaş` : '-'} • {selectedMemberProfile?.city || 'Şehir yok'}</p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-3">Hobiler: <span className="font-medium text-slate-700">{selectedMemberProfile?.hobbies || 'Belirtilmemiş'}</span></p>
+                 </div>
                  
                  <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                     <h4 className="text-sm font-bold text-slate-900 mb-2">Hızlı Notlar (Quick Facts)</h4>
                     <textarea value={quickFactsText} onChange={(e)=>setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none min-h-[100px]" />
                     <button onClick={saveQuickFacts} className="w-full mt-2 bg-slate-900 text-white text-xs font-bold py-2 rounded-lg">Notları Kaydet</button>
+                 </div>
+
+                 <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                    <h4 className="text-sm font-bold text-slate-900 mb-2">İşlem Geçmişi (Timeline)</h4>
+                    <div className="space-y-2 max-h-52 overflow-y-auto">
+                      {threadTimeline.length ? threadTimeline.map((event, idx) => (
+                        <div key={`${event.event_type}-${event.created_at}-${idx}`} className="text-xs rounded-lg border border-slate-200 bg-slate-50 p-2">
+                          <p className="font-bold text-slate-700">{event.event_type}</p>
+                          <p className="text-slate-500 mt-0.5">{formatTime(event.created_at)}</p>
+                          {!!event.meta && <p className="text-slate-600 mt-1 break-words">{JSON.stringify(event.meta)}</p>}
+                        </div>
+                      )) : <p className="text-xs text-slate-400">Henüz kayıtlı olay yok.</p>}
+                    </div>
                  </div>
               </aside>
             )}
@@ -1414,10 +1823,43 @@ export default function App() {
 
         /* ======================= USER SCREEN: DISCOVER ======================= */
         : userView === 'discover' ? (
-          <div className="space-y-6">
-            <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm">
-              <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
-              <p className="text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
+          <div className="space-y-6 relative">
+            <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
+            <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
+
+            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
+              <h2 className="relative text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
+              <p className="relative text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
+              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
+                  <p className="text-lg font-black text-amber-900">{memberProfile.coin_balance ?? 0} jeton</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Mesaj Maliyeti</p>
+                  <p className="text-lg font-black text-slate-900">{COIN_COST_PER_MESSAGE} jeton</p>
+                </div>
+                <button onClick={() => setUserView('coins')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left hover:bg-emerald-100 transition-colors">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Hızlı İşlem</p>
+                  <p className="text-lg font-black text-emerald-900">Jeton satın al →</p>
+                </button>
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Aktif Profil</p>
+                  <p className="text-xl font-black text-slate-900">{activeProfileCount}</p>
+                </div>
+                <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Okunmamış Mesaj</p>
+                  <p className="text-xl font-black text-rose-600">{totalUnreadCount}</p>
+                </div>
+                <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Uyum Skoru (Örnek)</p>
+                  <p className="text-xl font-black text-indigo-700">%{interestScore}</p>
+                </div>
+              </div>
               
               <div className="mt-8 flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
@@ -1430,9 +1872,34 @@ export default function App() {
               </div>
             </div>
 
+            {!!spotlightProfiles.length && (
+              <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-5 md:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-black text-slate-900">Bugünün Öne Çıkanları</h3>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700">Editor's pick</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {spotlightProfiles.slice(0, 3).map((profile) => (
+                    <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-40 text-left border border-slate-200 shadow-sm">
+                      {profile.photo_url ? (
+                        <img src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      ) : (
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300" />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent" />
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <p className="text-white font-bold text-base truncate">{profile.name}, {profile.age}</p>
+                        <p className="text-slate-200 text-xs truncate">{profile.city || 'Belirtilmemiş'} • Mesaja başla</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {discoverProfiles.map(profile => (
-                <div key={profile.id} className="group bg-white rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
+                <div key={profile.id} className="group bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                   <div className="relative h-72 overflow-hidden bg-slate-100">
                     {profile.photo_url ? (
                       <img src={profile.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
@@ -1453,8 +1920,8 @@ export default function App() {
                       {profile.hobbies.split(',').slice(0,3).map(h => h.trim() && <span key={h} className="text-[10px] font-bold px-2 py-1 bg-slate-100 text-slate-600 rounded-md">{h}</span>)}
                     </div>
                     <div className="mt-auto grid grid-cols-3 gap-2">
-                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>❤️</button>
-                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-sm font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>👋</button>
+                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>❤️ -{COIN_COST_PER_MESSAGE}</button>
+                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>👋 -{COIN_COST_PER_MESSAGE}</button>
                        <button onClick={() => openChatWithProfile(profile.id)} className="py-2.5 rounded-xl text-sm font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-md">Mesaj</button>
                     </div>
                   </div>
@@ -1526,6 +1993,10 @@ export default function App() {
                     </div>
 
                     <div className="p-4 bg-white border-t border-slate-100">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <p className="text-xs font-bold text-slate-500">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
+                        {coinSpendFeedback && <span className="text-xs font-black text-rose-600">{coinSpendFeedback}</span>}
+                      </div>
                       <div className="flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-2 focus-within:border-fuchsia-400 focus-within:ring-4 focus-within:ring-fuchsia-500/10 transition-all">
                         <textarea
                           value={newMessage}
@@ -1575,14 +2046,38 @@ export default function App() {
                      </div>
                      <span className="text-5xl">🪙</span>
                    </div>
-                   <div className="grid grid-cols-3 gap-4">
-                     {[500, 1200, 2500].map(amt => (
-                       <button key={amt} onClick={() => requestCoinCheckout(amt)} disabled={coinCheckoutLoading} className="py-4 bg-white border border-slate-200 hover:border-emerald-400 rounded-2xl font-bold text-slate-800 flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-50">
+                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                     {[
+                       { amount: 500, label: 'Başlangıç', bonus: '+0 bonus', price: '₺99' },
+                       { amount: 1200, label: 'Popüler Paket', bonus: '+120 bonus', price: '₺199', popular: true },
+                       { amount: 2500, label: 'Power Paket', bonus: '+400 bonus', price: '₺349' },
+                     ].map((pkg) => (
+                       <button key={pkg.amount} onClick={() => requestCoinCheckout(pkg.amount)} disabled={coinCheckoutLoading} className={`relative py-4 bg-white border rounded-2xl font-bold text-slate-800 flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-50 ${pkg.popular ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-slate-200 hover:border-emerald-300'}`}>
+                         {pkg.popular && <span className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black">En Popüler</span>}
                          <span className="text-emerald-500 text-xl">💎</span>
-                         <span>{amt} Jeton</span>
+                         <span>{pkg.amount} Jeton</span>
+                         <span className="text-xs text-slate-500">{pkg.label}</span>
+                         <span className="text-xs font-bold text-emerald-700">{pkg.bonus}</span>
+                         <span className="text-sm font-black text-slate-900">{pkg.price}</span>
                        </button>
                      ))}
                    </div>
+
+                   {coinSuccessGuideOpen && (
+                     <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                       <div className="flex items-start justify-between gap-4">
+                         <div>
+                           <p className="text-sm font-black text-emerald-800">Satın alma başarılı 🎉 Jetonla neler yapabilirsin?</p>
+                           <ul className="mt-2 text-xs text-emerald-900 list-disc pl-4 space-y-1">
+                             <li>Yeni bir profile mesaj gönder: -{COIN_COST_PER_MESSAGE} jeton</li>
+                             <li>Kalp/selam reaksiyonu gönder: -{COIN_COST_PER_MESSAGE} jeton</li>
+                             <li>Daha hızlı eşleşme için aktif sohbet başlat</li>
+                           </ul>
+                         </div>
+                         <button onClick={() => setCoinSuccessGuideOpen(false)} className="text-emerald-700 font-bold text-sm">Kapat</button>
+                       </div>
+                     </div>
+                   )}
                    
                    {/* TEST PURCHASE BUTTON */}
                    <div className="mt-8 pt-6 border-t border-slate-100">

@@ -14,8 +14,14 @@ export function useAuth() {
       if (raw) {
         try {
           const parsed = JSON.parse(raw);
-          if (parsed?.user?.id && parsed?.user?.username) {
-            setSession(parsed);
+          if (parsed?.user?.id) {
+            const normalizedSession = {
+              user: {
+                id: parsed.user.id,
+                username: parsed.user.username || parsed.user.name || `user_${String(parsed.user.id).slice(0, 6)}`,
+              },
+            };
+            setSession(normalizedSession);
             setLoading(false);
             return;
           }
@@ -59,7 +65,7 @@ export function useAuth() {
     }
 
     let row = Array.isArray(data) ? data[0] : data;
-    if (!row?.id || !row?.username) {
+    if (!row?.id) {
       setStatus('Kayıt başarılı olmadı: üye bilgisi alınamadı.');
       setLoading(false);
       return { ok: false, error: 'Üye bilgisi eksik.' };
@@ -67,7 +73,7 @@ export function useAuth() {
 
     // Profil veritabanı tetikleyicisi tarafından anında oluşturuldu.
     // Oturumu kaydedip giriş yapıyoruz.
-    const nextSession = { user: { id: row.id, username: row.username } };
+    const nextSession = { user: { id: row.id, username: row.username || normalizedUsername } };
     setSession(nextSession);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));
@@ -98,7 +104,7 @@ export function useAuth() {
        setLoading(false);
        return { ok: false, error: error?.message || 'Hatalı giriş.' };
     } else {
-      const nextSession = { user: { id: row.id, username: row.username } };
+      const nextSession = { user: { id: row.id, username: row.username || normalizedUsername } };
       setSession(nextSession);
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(nextSession));

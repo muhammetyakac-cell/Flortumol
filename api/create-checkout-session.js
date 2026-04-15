@@ -1,18 +1,33 @@
+import { createClient } from '@supabase/supabase-js';
+
+// Yardımcı JSON yanıt fonksiyonu
 function json(res, status, payload) {
   res.status(status).setHeader('Content-Type', 'application/json');
+  // CORS Başlıkları (Her yanıtta olmalı)
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Güvenlik için ileride kendi domain'ini yazabilirsin
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   return res.end(JSON.stringify(payload));
 }
 
 function getBaseUrl(req) {
   const explicitBaseUrl = process.env.APP_BASE_URL;
   if (explicitBaseUrl) return explicitBaseUrl;
-
   const proto = req.headers['x-forwarded-proto'] || 'https';
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   return `${proto}://${host}`;
 }
 
 export default async function handler(req, res) {
+  // 1. ADIM: CORS PREFLIGHT (ÖN KONTROL) HAKKI
+  // Tarayıcılar gerçek isteği atmadan önce "OPTIONS" metoduyla izin var mı diye sorar.
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return json(res, 405, { ok: false, error: 'method_not_allowed' });
@@ -38,6 +53,7 @@ export default async function handler(req, res) {
 
     const currency = (process.env.STRIPE_CURRENCY || 'try').toLowerCase();
     const unitAmountPerCoin = Number(process.env.STRIPE_UNIT_AMOUNT_PER_COIN || 10);
+    
     if (!Number.isFinite(unitAmountPerCoin) || unitAmountPerCoin <= 0) {
       return json(res, 500, { ok: false, error: 'stripe_unit_amount_invalid' });
     }
@@ -50,13 +66,13 @@ export default async function handler(req, res) {
     form.set('line_items[0][quantity]', '1');
     form.set('line_items[0][price_data][currency]', currency);
     form.set('line_items[0][price_data][product_data][name]', `${coinAmount} Flort Coin`);
-    form.set('line_items[0][price_data][product_data][description]', 'Flortbeta uygulaması içi coin paketi');
+    form.set('line_items[0][price_data][product_data][description]', 'Uygulama içi bakiye yükleme');
     form.set('line_items[0][price_data][unit_amount]', String(lineItemAmount));
     form.set('client_reference_id', memberId);
     form.set('metadata[member_id]', memberId);
     form.set('metadata[coin_amount]', String(coinAmount));
     form.set('metadata[source]', 'flortbeta_member_coins_page');
-    form.set('success_url', `${baseUrl}/?checkout=success&member_id=${encodeURIComponent(memberId)}&coin_amount=${coinAmount}`);
+    form.set('success_url', `${baseUrl}/?checkout=success&member_id=${encodeURIComponent(memberId)}`);
     form.set('cancel_url', `${baseUrl}/?checkout=cancelled`);
 
     const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
@@ -76,11 +92,8 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!session.url) {
-      return json(res, 500, { ok: false, error: 'stripe_checkout_url_missing' });
-    }
-
     return json(res, 200, { ok: true, url: session.url, id: session.id });
+
   } catch (error) {
     return json(res, 500, {
       ok: false,

@@ -1300,9 +1300,9 @@ export default function App() {
           <div className="flex items-center gap-4">
             {isAdmin && loggedIn && (
               <nav className="hidden md:flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-                {['chat', 'moderation', 'stats', 'settings', 'payments'].map((tab) => (
+                {['chat', 'stats', 'settings', 'payments'].map((tab) => (
                   <button key={tab} onClick={() => setAdminTab(tab)} className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition-all ${adminTab === tab ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'}`}>
-                    {tab === 'chat' ? 'Sohbetler' : tab === 'moderation' ? 'Moderasyon' : tab === 'stats' ? 'İstatistikler' : tab === 'settings' ? 'Ayarlar' : 'Ödemeler'}
+                    {tab === 'chat' ? 'Sohbetler' : tab === 'stats' ? 'İstatistikler' : tab === 'settings' ? 'Ayarlar' : 'Ödemeler'}
                   </button>
                 ))}
               </nav>
@@ -1565,21 +1565,6 @@ export default function App() {
                    chatBoxRef={adminChatBoxRef}
                  />
                )}
-               {adminTab === 'moderation' && (
-                 <ModerationPanel
-                   selectedThread={selectedThread}
-                   selectedThreadProfile={selectedThreadProfile}
-                   selectedMemberProfile={selectedMemberProfile}
-                   quickFactsText={quickFactsText}
-                   setQuickFactsText={setQuickFactsText}
-                   saveQuickFacts={saveQuickFacts}
-                   threadTimeline={threadTimeline}
-                   formatTime={formatTime}
-                   memberModeration={memberModeration}
-                   setMemberModeration={setMemberModeration}
-                   saveMemberModeration={saveMemberModeration}
-                 />
-               )}
                {adminTab === 'stats' && (
                  <AnalyticsPanel
                    statsRange={statsRange}
@@ -1678,6 +1663,25 @@ export default function App() {
                  />
                )}
             </main>
+
+            {adminTab === 'chat' && (
+              <aside className="w-full lg:w-[380px] bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <ModerationPanel
+                  className="p-4 md:p-4"
+                  selectedThread={selectedThread}
+                  selectedThreadProfile={selectedThreadProfile}
+                  selectedMemberProfile={selectedMemberProfile}
+                  quickFactsText={quickFactsText}
+                  setQuickFactsText={setQuickFactsText}
+                  saveQuickFacts={saveQuickFacts}
+                  threadTimeline={threadTimeline}
+                  formatTime={formatTime}
+                  memberModeration={memberModeration}
+                  setMemberModeration={setMemberModeration}
+                  saveMemberModeration={saveMemberModeration}
+                />
+              </aside>
+            )}
           </div>
         )
 

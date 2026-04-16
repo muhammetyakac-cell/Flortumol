@@ -6,6 +6,7 @@ import { AdminToggle } from '../components/admin/AdminToggle';
 import { AdminPrimaryButton } from '../components/admin/AdminPrimaryButton';
 
 export function ModerationPanel({
+  className = '',
   selectedThread,
   selectedThreadProfile,
   selectedMemberProfile,
@@ -19,7 +20,7 @@ export function ModerationPanel({
   saveMemberModeration,
 }) {
   return (
-    <div className="p-6 md:p-8 overflow-y-auto space-y-4">
+    <div className={`p-6 md:p-8 overflow-y-auto space-y-4 ${className}`.trim()}>
       <AdminCard className="p-5 flex flex-col items-center text-center">
         <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden mb-3 border-4 border-white shadow-md">
           {selectedThreadProfile?.photo_url ? <img src={selectedThreadProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-indigo-100" />}

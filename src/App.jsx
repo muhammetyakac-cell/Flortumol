@@ -5,6 +5,10 @@ import { InboxPanel } from './admin/InboxPanel';
 import { AnalyticsPanel } from './admin/AnalyticsPanel';
 import { PaymentsPanel } from './admin/PaymentsPanel';
 import { ModerationPanel } from './admin/ModerationPanel';
+import { AdminInput } from './components/admin/AdminInput';
+import { AdminToggle } from './components/admin/AdminToggle';
+import { AdminPrimaryButton } from './components/admin/AdminPrimaryButton';
+import { InlineAlert } from './components/admin/InlineAlert';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 const ADMIN_PASSWORD2 = import.meta.env.VITE_ADMIN_PASSWORD2;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -1530,13 +1534,14 @@ export default function App() {
                   </div>
                </div>
 
-               <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">SLA & Durum</h3>
-                  <div className="space-y-2 text-sm text-slate-700">
-                    <div className="flex justify-between"><span>Bekleyen Mesaj:</span> <strong className="text-rose-600">{slaStats.waitingCount}</strong></div>
-                    <div className="flex justify-between"><span>Ort. Bekleme:</span> <strong>{slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`}</strong></div>
-                  </div>
-               </div>
+                    <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+                      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">SLA & Durum</h3>
+                      <div className="space-y-2 text-sm text-slate-700">
+                        <div className="flex justify-between"><span>Bekleyen Mesaj:</span> <strong className="text-rose-600">{slaStats.waitingCount}</strong></div>
+                        <div className="flex justify-between"><span>Ort. Bekleme:</span> <strong>{slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`}</strong></div>
+                      </div>
+                      {slaStats.waitingCount > 0 && <InlineAlert tone={slaStats.waitingCount > 5 ? 'danger' : 'warning'} className="mt-3">Bekleyen konuşmaları öncelik sırasına göre cevapla.</InlineAlert>}
+                    </div>
             </aside>
 
             {/* Admin Center */}
@@ -1597,10 +1602,9 @@ export default function App() {
                     {/* General Settings */}
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
                       <h3 className="text-lg font-bold text-slate-900 mb-4">Genel Ayarlar</h3>
-                      <label className="flex items-center justify-between cursor-pointer max-w-md">
-                        <span className="font-semibold text-slate-700">Bildirim Sesi Aktif</span>
-                        <input type="checkbox" checked={notificationSoundEnabled} onChange={(e) => setNotificationSoundEnabled(e.target.checked)} className="w-5 h-5 accent-indigo-600 cursor-pointer" />
-                      </label>
+                      <div className="max-w-md">
+                        <AdminToggle label="Bildirim Sesi Aktif" checked={notificationSoundEnabled} onChange={(e) => setNotificationSoundEnabled(e.target.checked)} />
+                      </div>
                     </div>
 
                     {/* Create Virtual Profile */}
@@ -1610,14 +1614,14 @@ export default function App() {
                         <button onClick={fillRandomVirtualProfile} className="text-xl bg-white border border-slate-200 rounded-xl px-3 py-1.5 hover:bg-slate-100 transition-colors shadow-sm" title="Rastgele Doldur">🎲 Doldur</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input placeholder="Ad (boşsa otomatik)" value={profileForm.name} onChange={(e) => setProfileForm((s) => ({ ...s, name: e.target.value }))} className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
-                        <input placeholder="Yaş (boşsa otomatik)" type="number" value={profileForm.age} onChange={(e) => setProfileForm((s) => ({ ...s, age: e.target.value }))} className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
-                        <input placeholder="Şehir (boşsa otomatik)" value={profileForm.city} onChange={(e) => setProfileForm((s) => ({ ...s, city: e.target.value }))} className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+                        <AdminInput placeholder="Ad (boşsa otomatik)" value={profileForm.name} onChange={(e) => setProfileForm((s) => ({ ...s, name: e.target.value }))} />
+                        <AdminInput placeholder="Yaş (boşsa otomatik)" type="number" value={profileForm.age} onChange={(e) => setProfileForm((s) => ({ ...s, age: e.target.value }))} />
+                        <AdminInput placeholder="Şehir (boşsa otomatik)" value={profileForm.city} onChange={(e) => setProfileForm((s) => ({ ...s, city: e.target.value }))} />
                         <select value={profileForm.gender} onChange={(e) => setProfileForm((s) => ({ ...s, gender: e.target.value }))} className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
                           <option value="Kadın">Kadın</option>
                           <option value="Erkek">Erkek</option>
                         </select>
-                        <textarea placeholder="Hobiler (virgülle ayırın)" value={profileForm.hobbies} onChange={(e) => setProfileForm((s) => ({ ...s, hobbies: e.target.value }))} className="md:col-span-2 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]" />
+                        <AdminInput as="textarea" placeholder="Hobiler (virgülle ayırın)" value={profileForm.hobbies} onChange={(e) => setProfileForm((s) => ({ ...s, hobbies: e.target.value }))} className="md:col-span-2 min-h-[80px]" />
                       </div>
                       
                       <div className="flex items-center gap-4 mb-6">
@@ -1628,16 +1632,16 @@ export default function App() {
                          {profileForm.photo_url && <img src={profileForm.photo_url} alt="Önizleme" className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm" />}
                       </div>
 
-                      <button onClick={createVirtualProfile} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-colors">
+                      <AdminPrimaryButton onClick={createVirtualProfile} className="py-3 px-6">
                         Profili Kaydet (Oto Üretim Dahil)
-                      </button>
+                      </AdminPrimaryButton>
                     </div>
 
                     {/* Member List */}
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-bold text-slate-900">Kayıtlı Kullanıcılar</h3>
-                        <button onClick={fetchRegisteredMembers} className="text-sm bg-white border border-slate-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-slate-100 font-bold">Yenile</button>
+                        <AdminPrimaryButton onClick={fetchRegisteredMembers} className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800">Yenile</AdminPrimaryButton>
                       </div>
                       {loadingMembers ? (
                         <p className="text-slate-500 font-medium">Kullanıcılar yükleniyor...</p>

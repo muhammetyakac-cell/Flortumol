@@ -1,6 +1,9 @@
 import { AdminCard } from '../components/admin/AdminCard';
 import { SectionHeader } from '../components/admin/SectionHeader';
 import { StatusPill } from '../components/admin/StatusPill';
+import { AdminInput } from '../components/admin/AdminInput';
+import { AdminToggle } from '../components/admin/AdminToggle';
+import { AdminPrimaryButton } from '../components/admin/AdminPrimaryButton';
 
 export function ModerationPanel({
   selectedThread,
@@ -42,21 +45,18 @@ export function ModerationPanel({
       <AdminCard className="p-4">
         <SectionHeader title="Moderasyon" />
         <div className="mt-3 space-y-2">
-          <textarea value={memberModeration.note} onChange={(e) => setMemberModeration((s) => ({ ...s, note: e.target.value }))} placeholder="Moderasyon notu" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm min-h-[80px]" />
-          <input value={memberModeration.tags} onChange={(e) => setMemberModeration((s) => ({ ...s, tags: e.target.value }))} placeholder="Etiketler (virgülle)" className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm" />
-          <label className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-            <span className="text-sm font-semibold">Blacklist</span>
-            <input type="checkbox" checked={memberModeration.blacklisted} onChange={(e) => setMemberModeration((s) => ({ ...s, blacklisted: e.target.checked }))} className="w-5 h-5 accent-rose-500" />
-          </label>
+          <AdminInput as="textarea" value={memberModeration.note} onChange={(e) => setMemberModeration((s) => ({ ...s, note: e.target.value }))} placeholder="Moderasyon notu" className="min-h-[80px]" />
+          <AdminInput value={memberModeration.tags} onChange={(e) => setMemberModeration((s) => ({ ...s, tags: e.target.value }))} placeholder="Etiketler (virgülle)" />
+          <AdminToggle label="Blacklist" checked={memberModeration.blacklisted} onChange={(e) => setMemberModeration((s) => ({ ...s, blacklisted: e.target.checked }))} />
           <StatusPill tone={memberModeration.blacklisted ? 'danger' : 'success'}>{memberModeration.blacklisted ? 'Kara listede' : 'Aktif'}</StatusPill>
-          <button onClick={saveMemberModeration} className="w-full bg-slate-900 text-white text-xs font-bold py-2 rounded-lg">Moderasyonu Kaydet</button>
+          <AdminPrimaryButton onClick={saveMemberModeration} className="w-full py-2">Moderasyonu Kaydet</AdminPrimaryButton>
         </div>
       </AdminCard>
 
       <AdminCard className="p-4">
         <h4 className="text-sm font-bold text-slate-900 mb-2">Hızlı Notlar (Quick Facts)</h4>
-        <textarea value={quickFactsText} onChange={(e) => setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none min-h-[100px]" />
-        <button onClick={saveQuickFacts} className="w-full mt-2 bg-slate-900 text-white text-xs font-bold py-2 rounded-lg">Notları Kaydet</button>
+        <AdminInput as="textarea" value={quickFactsText} onChange={(e) => setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="min-h-[100px]" />
+        <AdminPrimaryButton onClick={saveQuickFacts} className="w-full mt-2 py-2">Notları Kaydet</AdminPrimaryButton>
       </AdminCard>
 
       <AdminCard className="p-4">

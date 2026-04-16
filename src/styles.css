@@ -12,6 +12,61 @@
   body {
     @apply bg-[#F4F7FB] text-slate-800 overflow-x-hidden;
   }
+
+  :root {
+    --admin-space-1: 0.25rem;
+    --admin-space-2: 0.5rem;
+    --admin-space-3: 0.75rem;
+    --admin-space-4: 1rem;
+    --admin-space-5: 1.25rem;
+    --admin-space-6: 1.5rem;
+    --admin-space-8: 2rem;
+
+    --admin-radius-sm: 0.625rem;
+    --admin-radius-md: 0.875rem;
+    --admin-radius-lg: 1rem;
+    --admin-radius-xl: 1.25rem;
+
+    --admin-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --admin-shadow-md: 0 8px 24px rgba(15, 23, 42, 0.08);
+
+    --admin-color-info-bg: #e0e7ff;
+    --admin-color-info-text: #3730a3;
+    --admin-color-success-bg: #dcfce7;
+    --admin-color-success-text: #166534;
+    --admin-color-warning-bg: #fef3c7;
+    --admin-color-warning-text: #92400e;
+    --admin-color-danger-bg: #ffe4e6;
+    --admin-color-danger-text: #9f1239;
+  }
+}
+
+@layer components {
+  .admin-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition-colors outline-none;
+  }
+  .admin-input:hover { @apply border-slate-300; }
+  .admin-input:focus { @apply border-indigo-500 ring-2 ring-indigo-500/15; }
+  .admin-input:disabled { @apply cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400; }
+  .admin-input[aria-invalid="true"] { @apply border-rose-300 ring-2 ring-rose-500/15; }
+
+  .admin-primary-button {
+    @apply inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors;
+  }
+  .admin-primary-button:hover { @apply bg-indigo-700; }
+  .admin-primary-button:disabled { @apply cursor-not-allowed bg-slate-400; }
+
+  .admin-toggle {
+    @apply h-5 w-5 cursor-pointer accent-indigo-600;
+  }
+
+  .admin-inline-alert {
+    @apply rounded-xl border px-3 py-2 text-xs font-semibold;
+  }
+  .admin-inline-alert[data-tone="info"] { background: var(--admin-color-info-bg); color: var(--admin-color-info-text); border-color: #c7d2fe; }
+  .admin-inline-alert[data-tone="success"] { background: var(--admin-color-success-bg); color: var(--admin-color-success-text); border-color: #bbf7d0; }
+  .admin-inline-alert[data-tone="warning"] { background: var(--admin-color-warning-bg); color: var(--admin-color-warning-text); border-color: #fde68a; }
+  .admin-inline-alert[data-tone="danger"] { background: var(--admin-color-danger-bg); color: var(--admin-color-danger-text); border-color: #fecdd3; }
 }
 
 /* --- MODERN SCROLLBAR --- */

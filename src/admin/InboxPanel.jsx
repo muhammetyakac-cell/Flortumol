@@ -1,5 +1,6 @@
 import { useInboxState } from '../hooks/admin/useInboxState';
 import { EmptyState } from '../components/admin/EmptyState';
+import { AdminPrimaryButton } from '../components/admin/AdminPrimaryButton';
 
 export function InboxPanel({
   selectedThread,
@@ -72,7 +73,7 @@ export function InboxPanel({
             placeholder="Kullanıcıya yanıt yazın..."
             className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none min-h-[48px]"
           />
-          <button onClick={sendAdminReply} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-colors h-12">Gönder</button>
+          <AdminPrimaryButton onClick={sendAdminReply} className="px-6 py-3 h-12">Gönder</AdminPrimaryButton>
         </div>
       </div>
     </>

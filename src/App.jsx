@@ -11,6 +11,12 @@ const COIN_COST_PER_MESSAGE = 20;
 const TEST_CONTACT_NUMBER = '5552083092';
 const DEFAULT_CHECKOUT_ENDPOINT = '/api/create-checkout-session';
 
+function resolveCheckoutEndpoint(endpoint) {
+  const raw = String(endpoint || '').trim();
+  if (!raw) return DEFAULT_CHECKOUT_ENDPOINT;
+  return raw;
+}
+
 const NAME_SEEDS = [
   'Alara','Asya','Defne','Nehir','Derin','Lina','Mira','Arya','Ela','Ada','Duru','Elif','Zeynep','Eylül','İdil','İpek','Mina','Nisa','Sude','Su','Beren','Naz','Aylin','Yaren','Lara','Selin','Melis','Ayşe','Buse','Ceren','Yasemin','Sena','Gizem','Selen','Nehir','Yelda','Esila','İrem','Tuana','Merve','Hilal','Nisanur','Ece','Nazlı','Güneş','Ecrin','Hazal','Helin','Sıla','Berfin','Damla','Sinem','Yağmur','Derya','Pelin','Cansu','Gökçe','Deniz','Meryem','Beste','Aden','Alina','Maya','Sahara','Lavin','Lavinya','Rüya','Nehirsu','Miray','Sahra','Mina','Nehirnaz','Aysu','Melisa','Zümra','Ecrinsu','Asel','Rabia','Nursena','Pınar','Leman','Öykü','Çağla','Açelya','Irmak','Ahu','Nehircan','Beliz','Elvan','Ayça','Mislina','Mislinay','Aren','Arven','Helia','Hira','Yüsra','Elisa','Liya','Mona','Noa','Talia'
 ];
@@ -1136,7 +1142,12 @@ export default function App() {
   }
 
   async function savePaymentSettings() {
-    const { error } = await supabase.from('payment_gateway_settings').upsert({ id: 1, provider: paymentSettings.provider, webhook_url: DEFAULT_CHECKOUT_ENDPOINT, is_active: paymentSettings.is_active }, { onConflict: 'id' });
+    const { error } = await supabase.from('payment_gateway_settings').upsert({
+      id: 1,
+      provider: paymentSettings.provider,
+      webhook_url: resolveCheckoutEndpoint(paymentSettings.webhook_url),
+      is_active: paymentSettings.is_active,
+    }, { onConflict: 'id' });
     if (error) return setStatus(error.message);
     setStatus('Ödeme API ayarları kaydedildi.');
   }
@@ -1146,7 +1157,7 @@ export default function App() {
     if (!paymentSettings.is_active) return setStatus('Ödeme sistemi aktif değil.');
     setCoinCheckoutLoading(true);
     try {
-      const response = await fetch(DEFAULT_CHECKOUT_ENDPOINT, {
+      const response = await fetch(resolveCheckoutEndpoint(paymentSettings.webhook_url), {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ member_id: memberSession.id, coin_amount: coinAmount, provider: paymentSettings.provider || 'stripe', source: 'flortbeta_member_coins_page' }),
       });
@@ -1744,7 +1755,8 @@ export default function App() {
                  <div className="p-6 md:p-8 overflow-y-auto">
                     <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 max-w-2xl">
                       <h3 className="text-lg font-bold text-slate-900 mb-2">Ödeme API Entegrasyonu</h3>
-                      <p className="text-sm text-slate-600 font-medium mb-6">Coin satın alma akışı belirtilen Checkout Session endpointine otomatik gider. Sistem doğrudan bu altyapıyı kullanır.</p>
+                      <p className="text-sm text-slate-600 font-medium mb-2">Bu alandaki URL sadece uygulamanın <span className="font-bold">checkout başlatırken</span> çağırdığı endpointtir.</p>
+                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-6">Stripe webhook callback adresi buradan yönetilmez. Stripe Dashboard → Developers → Webhooks ekranındaki endpoint ayrıca <code className="px-1 py-0.5 rounded bg-amber-100 text-amber-900">/api/webhook</code> olmalıdır.</p>
                       
                       <div className="space-y-5">
                         <div>
@@ -1753,9 +1765,14 @@ export default function App() {
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Checkout Endpoint URL</label>
-                          <input readOnly value={DEFAULT_CHECKOUT_ENDPOINT} className="w-full px-4 py-3 bg-slate-100 border border-slate-200 rounded-xl text-sm text-slate-500 cursor-not-allowed" />
-                          <p className="text-xs text-slate-500 font-medium mt-2">Webhook callback adresi: <code className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">/api/webhook</code></p>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Checkout Session Endpoint URL (Client → API)</label>
+                          <input
+                            value={paymentSettings.webhook_url}
+                            onChange={(e) => setPaymentSettings((prev) => ({ ...prev, webhook_url: e.target.value }))}
+                            placeholder={DEFAULT_CHECKOUT_ENDPOINT}
+                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
+                          />
+                          <p className="text-xs text-slate-500 font-medium mt-2">Stripe callback (Stripe → API) adresi: <code className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">/api/webhook</code></p>
                         </div>
 
                         <label className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl cursor-pointer shadow-sm mt-4 hover:border-emerald-300 transition-colors">

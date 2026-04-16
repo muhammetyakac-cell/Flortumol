@@ -25,6 +25,34 @@ alter table public.members
 
 revoke all (password_hash) on public.members from anon, authenticated;
 
+create or replace function public.protect_member_credentials_from_placeholder_overwrite()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op <> 'UPDATE' then
+    return new;
+  end if;
+
+  -- Mevcut gerçek kullanıcı bilgisini placeholder değerlere ezdirmeyelim.
+  if old.password_hash is distinct from 'managed_by_payment_webhook'
+     and new.password_hash = 'managed_by_payment_webhook' then
+    raise exception 'blocked_placeholder_password_overwrite';
+  end if;
+
+  if old.username !~ '^member_[0-9a-f]{8,}$'
+     and new.username ~ '^member_[0-9a-f]{8,}$' then
+    raise exception 'blocked_placeholder_username_overwrite';
+  end if;
+
+  return new;
+end $$;
+
+drop trigger if exists trg_protect_member_credentials_from_placeholder_overwrite on public.members;
+create trigger trg_protect_member_credentials_from_placeholder_overwrite
+before update on public.members
+for each row execute function public.protect_member_credentials_from_placeholder_overwrite();
+
 create table if not exists public.member_profiles (
   member_id uuid primary key references public.members(id) on delete cascade,
   age int,

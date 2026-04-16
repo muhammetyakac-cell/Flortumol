@@ -173,9 +173,12 @@ begin
       end if;
 
       insert into public.members (id, username, password_hash)
-      values (new.id, resolved_username, 'managed_by_supabase_auth')
-      on conflict (id) do update
-      set username = excluded.username;
+values (new.id, resolved_username, 'managed_by_supabase_auth')
+on conflict (id) do update
+set username = CASE 
+  WHEN excluded.username IS NOT NULL AND excluded.username != '' THEN excluded.username
+  ELSE members.username  -- ✅ Mevcut username'i koru
+END;
 
       return new;
     end;

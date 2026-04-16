@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { useAuth } from './hooks/useAuth';
+import { InboxPanel } from './admin/InboxPanel';
+import { AnalyticsPanel } from './admin/AnalyticsPanel';
+import { PaymentsPanel } from './admin/PaymentsPanel';
+import { ModerationPanel } from './admin/ModerationPanel';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
 const ADMIN_PASSWORD2 = import.meta.env.VITE_ADMIN_PASSWORD2;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -89,7 +93,6 @@ export default function App() {
   const [adminTypingByThread, setAdminTypingByThread] = useState({});
   const [aiSuggestions, setAiSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
-  const [adminDrawerOpen, setAdminDrawerOpen] = useState(true);
   const [selectedThreadKeys, setSelectedThreadKeys] = useState({});
   const [bulkTemplate, setBulkTemplate] = useState(BULK_TEMPLATES[0]);
   const [notificationSoundEnabled, setNotificationSoundEnabled] = useState(true);
@@ -1141,14 +1144,15 @@ export default function App() {
     if (!error && data) setPaymentSettings((prev) => ({ ...prev, provider: data.provider || '', webhook_url: data.webhook_url || DEFAULT_CHECKOUT_ENDPOINT, is_active: !!data.is_active }));
   }
 
-  async function savePaymentSettings() {
+  async function savePaymentSettings(nextSettings = paymentSettings) {
     const { error } = await supabase.from('payment_gateway_settings').upsert({
       id: 1,
-      provider: paymentSettings.provider,
-      webhook_url: resolveCheckoutEndpoint(paymentSettings.webhook_url),
-      is_active: paymentSettings.is_active,
+      provider: nextSettings.provider,
+      webhook_url: resolveCheckoutEndpoint(nextSettings.webhook_url),
+      is_active: nextSettings.is_active,
     }, { onConflict: 'id' });
     if (error) return setStatus(error.message);
+    setPaymentSettings((prev) => ({ ...prev, ...nextSettings }));
     setStatus('Ödeme API ayarları kaydedildi.');
   }
 
@@ -1292,9 +1296,9 @@ export default function App() {
           <div className="flex items-center gap-4">
             {isAdmin && loggedIn && (
               <nav className="hidden md:flex bg-slate-800/50 p-1 rounded-xl border border-slate-700/50">
-                {['chat', 'stats', 'settings', 'payments'].map((tab) => (
+                {['chat', 'moderation', 'stats', 'settings', 'payments'].map((tab) => (
                   <button key={tab} onClick={() => setAdminTab(tab)} className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition-all ${adminTab === tab ? 'bg-indigo-500 text-white shadow-md' : 'text-slate-300 hover:text-white hover:bg-slate-700/50'}`}>
-                    {tab === 'chat' ? 'Sohbetler' : tab === 'stats' ? 'İstatistikler' : tab === 'settings' ? 'Ayarlar' : 'Ödemeler'}
+                    {tab === 'chat' ? 'Sohbetler' : tab === 'moderation' ? 'Moderasyon' : tab === 'stats' ? 'İstatistikler' : tab === 'settings' ? 'Ayarlar' : 'Ödemeler'}
                   </button>
                 ))}
               </nav>
@@ -1535,143 +1539,55 @@ export default function App() {
                </div>
             </aside>
 
-            {/* Admin Center - Chat Tab */}
+            {/* Admin Center */}
             <main className="flex-1 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
                {adminTab === 'chat' && (
-                 <>
-                    <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                      <div>
-                        <h2 className="text-lg font-bold text-slate-900">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
-                        <p className="text-xs font-semibold text-emerald-600">Sanal Profil Modülü</p>
-                        {selectedThread && (
-                          <p className="text-[11px] font-semibold text-slate-500 mt-1">
-                            Öncelik: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.priority || '-')} •
-                            Sorumlu: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.assigned_admin || 'Atanmamış')}
-                          </p>
-                        )}
-                      </div>
-                      <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="bg-white border border-slate-200 text-sm font-medium py-1.5 px-3 rounded-lg outline-none">
-                        {THREAD_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
-                      </select>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={adminChatBoxRef}>
-                       {!selectedThread && <div className="h-full flex items-center justify-center text-slate-400 font-medium">Soldan bir konuşma seçin.</div>}
-                       {threadMessages.map((msg) => (
-                         <div key={msg.id} className={`flex flex-col max-w-[80%] ${msg.sender_role === 'member' ? 'items-start mr-auto' : 'items-end ml-auto'}`}>
-                            <span className="text-[11px] font-bold text-slate-400 mb-1 px-1">
-                              {msg.sender_role === 'member' ? selectedThread?.member_username : selectedThread?.virtual_name}
-                            </span>
-                            <div className={`px-4 py-2.5 rounded-2xl shadow-sm ${msg.sender_role === 'member' ? 'bg-slate-100 text-slate-900 msg-tail-member' : 'bg-indigo-600 text-white msg-tail-virtual'}`}>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
-                            </div>
-                            <span className="text-[10px] text-slate-400 mt-1 px-1">{formatTime(msg.created_at)}</span>
-                         </div>
-                       ))}
-                    </div>
-
-                    <div className="p-4 bg-white border-t border-slate-100 space-y-3">
-                       {!!aiSuggestions.length && (
-                         <div className="flex flex-wrap gap-2">
-                           {aiSuggestions.map((sugg) => (
-                             <button key={sugg} onClick={() => setAdminReply(sugg)} className="px-3 py-1.5 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100 text-xs font-semibold rounded-full border border-fuchsia-200 transition-colors">
-                               ✨ {sugg}
-                             </button>
-                           ))}
-                         </div>
-                       )}
-                       <div className="flex items-end gap-3">
-                         <button onClick={fetchAiSuggestions} disabled={loadingSuggestions} className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition-colors" title="AI Önerisi Al">
-                            🤖
-                         </button>
-                         <textarea
-                           value={adminReply}
-                           onChange={(e) => { setAdminReply(e.target.value); autoResizeTextarea(e.target, 150); }}
-                           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminReply(); } }}
-                           placeholder="Kullanıcıya yanıt yazın..."
-                           className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none min-h-[48px]"
-                         />
-                         <button onClick={sendAdminReply} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-colors h-12">
-                           Gönder
-                         </button>
-                       </div>
-                    </div>
-                 </>
+                 <InboxPanel
+                   selectedThread={selectedThread}
+                   threadOpsByKey={threadOpsByKey}
+                   threadKey={threadKey}
+                   THREAD_TAGS={THREAD_TAGS}
+                   updateSelectedThreadTag={updateSelectedThreadTag}
+                   threadMessages={threadMessages}
+                   formatTime={formatTime}
+                   aiSuggestions={aiSuggestions}
+                   loadingSuggestions={loadingSuggestions}
+                   fetchAiSuggestions={fetchAiSuggestions}
+                   adminReply={adminReply}
+                   setAdminReply={setAdminReply}
+                   sendAdminReply={sendAdminReply}
+                   autoResizeTextarea={autoResizeTextarea}
+                   chatBoxRef={adminChatBoxRef}
+                 />
                )}
-               
-               {/* Admin Center - Stats Tab */}
+               {adminTab === 'moderation' && (
+                 <ModerationPanel
+                   selectedThread={selectedThread}
+                   selectedThreadProfile={selectedThreadProfile}
+                   selectedMemberProfile={selectedMemberProfile}
+                   quickFactsText={quickFactsText}
+                   setQuickFactsText={setQuickFactsText}
+                   saveQuickFacts={saveQuickFacts}
+                   threadTimeline={threadTimeline}
+                   formatTime={formatTime}
+                   memberModeration={memberModeration}
+                   setMemberModeration={setMemberModeration}
+                   saveMemberModeration={saveMemberModeration}
+                 />
+               )}
                {adminTab === 'stats' && (
-                 <div className="p-6 md:p-8 overflow-y-auto">
-                    <h2 className="text-2xl font-bold mb-4 text-slate-900">Stats Dashboard ({statsRange === 'daily' ? 'Günlük' : statsRange === 'weekly' ? 'Haftalık' : 'Aylık'})</h2>
-                    <div className="flex flex-wrap gap-2 mb-4">
-                      <button onClick={() => setStatsRange('daily')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'daily' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Günlük</button>
-                      <button onClick={() => setStatsRange('weekly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Haftalık</button>
-                      <button onClick={() => setStatsRange('monthly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'monthly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Aylık</button>
-                      <button onClick={exportStatsCsv} className="px-4 py-2 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white">CSV Export</button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-                      <label className="text-xs font-bold text-slate-500">Tarih Başlangıç
-                        <input type="date" value={statsDateRange.from} onChange={(e) => setStatsDateRange((p) => ({ ...p, from: e.target.value }))} className="mt-1 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm" />
-                      </label>
-                      <label className="text-xs font-bold text-slate-500">Tarih Bitiş
-                        <input type="date" value={statsDateRange.to} onChange={(e) => setStatsDateRange((p) => ({ ...p, to: e.target.value }))} className="mt-1 w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm" />
-                      </label>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-slate-900">{adminStats.totalMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-slate-900">{adminStats.memberMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-slate-900">{adminStats.adminRepliesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.respondedThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-slate-900">{adminStats.newMembersToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200"><p className="text-sm text-slate-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-slate-900">{adminStats.activeThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)}%</p></div>
-                       <div className={`p-4 rounded-2xl border md:col-span-2 xl:col-span-1 ${adminStats.avgResponseMinToday > 7 ? 'bg-rose-50 border-rose-200' : 'bg-slate-50 border-slate-200'}`}><p className="text-sm text-slate-500 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-slate-900">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p><p className={`text-xs font-bold ${pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday) <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)}%</p></div>
-                    </div>
-                    {!!statsAlerts.length && (
-                      <div className="mb-4 p-4 rounded-2xl border border-rose-200 bg-rose-50">
-                        <h4 className="text-sm font-black text-rose-700 mb-2">Kritik Alarm</h4>
-                        <ul className="text-xs text-rose-700 list-disc pl-4 space-y-1">
-                          {statsAlerts.map((alert) => <li key={alert}>{alert}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">Engagement (7 Gün)</h3>
-                        <p className="text-sm font-semibold text-slate-600 mb-2">Yoğun saatler:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
-                            <span key={item.label} className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">{item.label} ({item.count})</span>
-                          )) : <span className="text-sm text-slate-400">Veri yok</span>}
-                        </div>
-                        <div className="mt-3 flex items-end gap-1 h-16">
-                          {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
-                            <div key={`chart-${item.label}`} className="flex-1 flex flex-col items-center justify-end gap-1">
-                              <div className="w-full rounded-t bg-indigo-400/80" style={{ height: `${Math.max(10, item.count * 8)}px` }} />
-                              <span className="text-[10px] text-slate-500">{item.label.slice(0, 2)}</span>
-                            </div>
-                          )) : <span className="text-xs text-slate-400">Mini chart için veri yok.</span>}
-                        </div>
-                      </div>
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">İlgi gören profiller:</h3>
-                        <div className="space-y-2">
-                          {engagementInsights.topProfiles.length ? engagementInsights.topProfiles.map((item) => (
-                            <div key={item.name} className="flex items-center justify-between rounded-xl bg-white border border-slate-200 px-3 py-2 text-sm">
-                              <span className="font-semibold text-slate-700">{item.name}</span>
-                              <span className="font-black text-indigo-700">{item.count} <span className="text-[10px] text-slate-400">▁▃▆█</span></span>
-                            </div>
-                          )) : <span className="text-sm text-slate-400">Veri yok</span>}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4 p-4 rounded-2xl border border-emerald-200 bg-emerald-50">
-                      <h4 className="text-sm font-black text-emerald-800 mb-2">Önerilen Aksiyonlar</h4>
-                      <ul className="text-xs text-emerald-900 list-disc pl-4 space-y-1">
-                        <li>Bulk mesajı şu saatlerde dene: {engagementInsights.topHours.map((h) => h.label).join(', ') || 'veri yok'}.</li>
-                        <li>Boost önceliği verilecek profiller: {engagementInsights.topProfiles.map((p) => p.name).join(', ') || 'veri yok'}.</li>
-                      </ul>
-                    </div>
-                 </div>
+                 <AnalyticsPanel
+                   statsRange={statsRange}
+                   setStatsRange={setStatsRange}
+                   exportStatsCsv={exportStatsCsv}
+                   statsDateRange={statsDateRange}
+                   setStatsDateRange={setStatsDateRange}
+                   adminStats={adminStats}
+                   previousAdminStats={previousAdminStats}
+                   pctChange={pctChange}
+                   statsAlerts={statsAlerts}
+                   engagementInsights={engagementInsights}
+                 />
                )}
 
                {/* Admin Center - Settings Tab (MISSING CODE RESTORED HERE) */}
@@ -1750,91 +1666,14 @@ export default function App() {
                  </div>
                )}
 
-               {/* Admin Center - Payments Tab (MISSING CODE RESTORED HERE) */}
                {adminTab === 'payments' && (
-                 <div className="p-6 md:p-8 overflow-y-auto">
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 max-w-2xl">
-                      <h3 className="text-lg font-bold text-slate-900 mb-2">Ödeme API Entegrasyonu</h3>
-                      <p className="text-sm text-slate-600 font-medium mb-2">Bu alandaki URL sadece uygulamanın <span className="font-bold">checkout başlatırken</span> çağırdığı endpointtir.</p>
-                      <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-6">Stripe webhook callback adresi buradan yönetilmez. Stripe Dashboard → Developers → Webhooks ekranındaki endpoint ayrıca <code className="px-1 py-0.5 rounded bg-amber-100 text-amber-900">/api/webhook</code> olmalıdır.</p>
-                      
-                      <div className="space-y-5">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Provider (örn: stripe, paytr)</label>
-                          <input placeholder="Provider girin" value={paymentSettings.provider} onChange={(e) => setPaymentSettings((prev) => ({ ...prev, provider: e.target.value }))} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Checkout Session Endpoint URL (Client → API)</label>
-                          <input
-                            value={paymentSettings.webhook_url}
-                            onChange={(e) => setPaymentSettings((prev) => ({ ...prev, webhook_url: e.target.value }))}
-                            placeholder={DEFAULT_CHECKOUT_ENDPOINT}
-                            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
-                          />
-                          <p className="text-xs text-slate-500 font-medium mt-2">Stripe callback (Stripe → API) adresi: <code className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">/api/webhook</code></p>
-                        </div>
-
-                        <label className="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl cursor-pointer shadow-sm mt-4 hover:border-emerald-300 transition-colors">
-                          <span className="font-bold text-slate-700">Entegrasyon Aktif</span>
-                          <input type="checkbox" checked={paymentSettings.is_active} onChange={(e) => setPaymentSettings((prev) => ({ ...prev, is_active: e.target.checked }))} className="w-5 h-5 accent-emerald-500 cursor-pointer" />
-                        </label>
-
-                        <button onClick={savePaymentSettings} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-md transition-colors mt-2">
-                          Ödeme Ayarlarını Kaydet
-                        </button>
-                      </div>
-                    </div>
-                 </div>
+                 <PaymentsPanel
+                   paymentSettings={paymentSettings}
+                   defaultCheckoutEndpoint={DEFAULT_CHECKOUT_ENDPOINT}
+                   onSave={savePaymentSettings}
+                 />
                )}
             </main>
-
-            {/* Admin Right Sidebar */}
-            {adminDrawerOpen && adminTab === 'chat' && (
-              <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
-                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col items-center text-center">
-                    <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden mb-3 border-4 border-white shadow-md">
-                      {selectedThreadProfile?.photo_url ? <img src={selectedThreadProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-indigo-100" />}
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-900">{selectedThreadProfile?.name || '-'}</h3>
-                    <p className="text-sm text-slate-500 font-medium">{selectedThreadProfile?.age} • {selectedThreadProfile?.city}</p>
-                 </div>
-
-                 <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-900 mb-3">Sohbet Edilen Kullanıcı</h4>
-                    <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm">
-                        {selectedMemberProfile?.photo_url ? <img src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-slate-900 truncate">{selectedThread?.member_username || 'Kullanıcı seçilmedi'}</p>
-                        <p className="text-xs text-slate-500">{selectedMemberProfile?.age ? `${selectedMemberProfile.age} yaş` : '-'} • {selectedMemberProfile?.city || 'Şehir yok'}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-3">Hobiler: <span className="font-medium text-slate-700">{selectedMemberProfile?.hobbies || 'Belirtilmemiş'}</span></p>
-                 </div>
-                 
-                 <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-900 mb-2">Hızlı Notlar (Quick Facts)</h4>
-                    <textarea value={quickFactsText} onChange={(e)=>setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none min-h-[100px]" />
-                    <button onClick={saveQuickFacts} className="w-full mt-2 bg-slate-900 text-white text-xs font-bold py-2 rounded-lg">Notları Kaydet</button>
-                 </div>
-
-                 <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
-                    <h4 className="text-sm font-bold text-slate-900 mb-2">İşlem Geçmişi (Timeline)</h4>
-                    <div className="space-y-2 max-h-52 overflow-y-auto">
-                      {threadTimeline.length ? threadTimeline.map((event, idx) => (
-                        <div key={`${event.event_type}-${event.created_at}-${idx}`} className="text-xs rounded-lg border border-slate-200 bg-slate-50 p-2">
-                          <p className="font-bold text-slate-700">{event.event_type}</p>
-                          <p className="text-slate-500 mt-0.5">{formatTime(event.created_at)}</p>
-                          {!!event.meta && <p className="text-slate-600 mt-1 break-words">{JSON.stringify(event.meta)}</p>}
-                        </div>
-                      )) : <p className="text-xs text-slate-400">Henüz kayıtlı olay yok.</p>}
-                    </div>
-                 </div>
-              </aside>
-            )}
-
           </div>
         )
 

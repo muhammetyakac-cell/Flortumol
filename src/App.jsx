@@ -23,6 +23,7 @@ const NAME_SEEDS = [
 const NAME_SUFFIXES = ['', ' Nur', ' Su', ' Naz', ' Ada'];
 const FEMALE_NAMES = Array.from(new Set(NAME_SEEDS.flatMap((seed) => NAME_SUFFIXES.map((s) => `${seed}${s}`)))).slice(0, 250);
 const CITY_LIST = ['İstanbul','Ankara','İzmir','Bursa','Antalya','Eskişehir','Muğla','Mersin','Adana','Konya','Samsun','Trabzon','Gaziantep','Kayseri','Kocaeli','Tekirdağ','Çanakkale','Aydın','Balıkesir','Denizli','Sakarya','Hatay','Manisa','Edirne','Bolu','Kırklareli','Sinop','Rize','Giresun','Ordu'];
+const PRIORITY_CITY_LIST = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya', 'Gaziantep', 'Şanlıurfa', 'Kocaeli'];
 const QUICK_REPLIES = ['Merhaba! 🌸', 'Naber, günün nasıl geçti?', 'Fotoğrafın çok güzel 😍', 'Kahve içelim mi? ☕'];
 const THREAD_TAGS = ['sicak_lead', 'soguk', 'takip_edilecek'];
 const BULK_TEMPLATES = ['Merhaba! 👋', 'Naber, günün nasıl?', 'Müsaitsen yaz ✨'];
@@ -40,7 +41,7 @@ function buildHourlyOnlineMap(profiles, hourKey) {
   const list = profiles || [];
   if (!list.length) return map;
 
-  const targetOnlineCount = Math.min(list.length, Math.floor(list.length / 2) + 3);
+  const targetOnlineCount = Math.min(list.length, Math.floor(list.length / 2) + 5);
   const ranked = [...list]
     .map((profile) => ({
       id: profile.id,
@@ -85,6 +86,7 @@ export default function App() {
   const [unreadByProfile, setUnreadByProfile] = useState({});
   const [adminUnreadByThread, setAdminUnreadByThread] = useState({});
   const [onlineProfiles, setOnlineProfiles] = useState({});
+  const [forcedOnlineProfiles, setForcedOnlineProfiles] = useState({});
   const [typingLabel, setTypingLabel] = useState('');
   const [adminTypingByThread, setAdminTypingByThread] = useState({});
   const [aiSuggestions, setAiSuggestions] = useState([]);
@@ -250,10 +252,10 @@ export default function App() {
     }
   }, [loggedIn, isAdmin, memberProfile.coin_balance, zeroCoinPromptDismissed]);
 
-  const effectiveOnlineProfiles = useMemo(
-    () => (isAdmin ? onlineProfiles : buildHourlyOnlineMap(virtualProfiles, hourKey)),
-    [isAdmin, onlineProfiles, virtualProfiles, hourKey]
-  );
+  const effectiveOnlineProfiles = useMemo(() => {
+    if (isAdmin) return onlineProfiles;
+    return { ...buildHourlyOnlineMap(virtualProfiles, hourKey), ...forcedOnlineProfiles };
+  }, [isAdmin, onlineProfiles, virtualProfiles, hourKey, forcedOnlineProfiles]);
 
   const discoverProfiles = useMemo(() => {
     const filtered = sortedProfiles.filter((profile) => {
@@ -401,10 +403,16 @@ export default function App() {
   function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
   function buildRandomVirtualProfile() {
+    const fallbackCities = CITY_LIST.filter((city) => !PRIORITY_CITY_LIST.includes(city));
+    const weightedCities = [
+      ...Array.from({ length: 7 }, () => PRIORITY_CITY_LIST).flat(),
+      ...fallbackCities,
+    ];
+
     return {
       name: getRandomItem(FEMALE_NAMES),
       age: String(Math.floor(Math.random() * 14) + 20),
-      city: getRandomItem(CITY_LIST),
+      city: getRandomItem(weightedCities),
       gender: 'Kadın',
       hobbies: getRandomItem(['Kahve, seyahat, müzik','Yoga, kitap, yürüyüş','Sinema, fotoğraf, dans','Pilates, moda, sanat','Doğa, kamp, paten']),
     };
@@ -629,6 +637,7 @@ export default function App() {
 
         if (changed.sender_role === 'virtual') {
           playNotificationSound();
+          setForcedOnlineProfiles((prev) => ({ ...prev, [changed.virtual_profile_id]: true }));
         }
 
         const viewingSelectedChat = userView === 'chat' && selectedProfileId && changed.virtual_profile_id === selectedProfileId;
@@ -1423,7 +1432,7 @@ export default function App() {
                 <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/20 to-indigo-600/40 mix-blend-overlay" />
                 <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80" alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" />
                 <div className="relative z-10 text-white">
-                  <h3 className="text-3xl font-black mb-2 leading-tight">Yapay Zeka ile<br/>Modern Flört Deneyimi</h3>
+                  <h3 className="text-3xl font-black mb-2 leading-tight">Gerçek Kişilerle<br/>Canlı Sohbet Deneyimi</h3>
                   <p className="text-slate-300 font-medium">Hemen katıl ve sana en uygun eşleşmeleri saniyeler içinde bul.</p>
                 </div>
               </div>
@@ -1843,7 +1852,7 @@ export default function App() {
             <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
             <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
 
-            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
+            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50 md:max-w-[70%] md:mx-auto">
               <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
               <h2 className="relative text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
               <p className="relative text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
@@ -1987,9 +1996,23 @@ export default function App() {
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
                          {selectedProfile.photo_url && <img src={selectedProfile.photo_url} className="w-full h-full object-cover" />}
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-slate-900 leading-tight">{selectedProfile.name}</h3>
                         <p className="text-xs font-semibold text-emerald-500">{effectiveOnlineProfiles[selectedProfile.id] ? 'Çevrimiçi' : 'Çevrimdışı'}</p>
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                          <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Kişi Bilgisi</p>
+                            <p className="font-semibold text-slate-700 truncate">{selectedProfile.city || 'Belirtilmemiş'}</p>
+                          </div>
+                          <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Yaş</p>
+                            <p className="font-semibold text-slate-700">{selectedProfile.age || '-'}</p>
+                          </div>
+                          <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Genel Bilgiler</p>
+                            <p className="font-semibold text-slate-700 truncate">{selectedProfile.hobbies || 'Belirtilmemiş'}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

@@ -27,6 +27,8 @@ const PRIORITY_CITY_LIST = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya',
 const QUICK_REPLIES = ['Merhaba! 🌸', 'Naber, günün nasıl geçti?', 'Fotoğrafın çok güzel 😍', 'Kahve içelim mi? ☕'];
 const THREAD_TAGS = ['sicak_lead', 'soguk', 'takip_edilecek'];
 const BULK_TEMPLATES = ['Merhaba! 👋', 'Naber, günün nasıl?', 'Müsaitsen yaz ✨'];
+const LIST_BATCH_SIZE = 8;
+const USER_CHAT_VISIBLE_PROFILE_COUNT = 7;
 
 function hashToInt(text) {
   let hash = 0;
@@ -130,6 +132,8 @@ export default function App() {
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedMemberProfile, setSelectedMemberProfile] = useState(null);
+  const [userProfileRenderCount, setUserProfileRenderCount] = useState(LIST_BATCH_SIZE);
+  const [adminThreadRenderCount, setAdminThreadRenderCount] = useState(LIST_BATCH_SIZE);
   const [memberModeration, setMemberModeration] = useState({ note: '', tags: '', blacklisted: false });
   const [coinPurchaseModalOpen, setCoinPurchaseModalOpen] = useState(false);
   const [zeroCoinPromptDismissed, setZeroCoinPromptDismissed] = useState(false);
@@ -293,6 +297,14 @@ export default function App() {
   );
 
   const spotlightProfiles = useMemo(() => discoverProfiles.slice(0, 5), [discoverProfiles]);
+  const renderedUserProfiles = useMemo(
+    () => sortedProfiles.slice(0, userProfileRenderCount),
+    [sortedProfiles, userProfileRenderCount]
+  );
+  const renderedIncomingThreads = useMemo(
+    () => sortedIncomingThreads.slice(0, adminThreadRenderCount),
+    [sortedIncomingThreads, adminThreadRenderCount]
+  );
 
   const onboardingState = useMemo(() => {
     const hasPhoto = !!memberProfile.photo_url;
@@ -539,6 +551,34 @@ export default function App() {
     if (!threadQueueRef.current || !isAdmin) return;
     threadQueueRef.current.scrollTop = 0;
   }, [incomingThreads, isAdmin]);
+
+  useEffect(() => {
+    setUserProfileRenderCount((prev) => {
+      const minNeeded = Math.min(LIST_BATCH_SIZE, sortedProfiles.length || LIST_BATCH_SIZE);
+      if (prev < minNeeded) return minNeeded;
+      return Math.min(prev, sortedProfiles.length || LIST_BATCH_SIZE);
+    });
+  }, [sortedProfiles.length]);
+
+  useEffect(() => {
+    setAdminThreadRenderCount((prev) => {
+      const minNeeded = Math.min(LIST_BATCH_SIZE, sortedIncomingThreads.length || LIST_BATCH_SIZE);
+      if (prev < minNeeded) return minNeeded;
+      return Math.min(prev, sortedIncomingThreads.length || LIST_BATCH_SIZE);
+    });
+  }, [sortedIncomingThreads.length]);
+
+  function handleUserProfileListScroll(e) {
+    const target = e.currentTarget;
+    if (target.scrollTop + target.clientHeight < target.scrollHeight - 40) return;
+    setUserProfileRenderCount((prev) => Math.min(prev + LIST_BATCH_SIZE, sortedProfiles.length));
+  }
+
+  function handleAdminThreadQueueScroll(e) {
+    const target = e.currentTarget;
+    if (target.scrollTop + target.clientHeight < target.scrollHeight - 40) return;
+    setAdminThreadRenderCount((prev) => Math.min(prev + LIST_BATCH_SIZE, sortedIncomingThreads.length));
+  }
 
   useEffect(() => {
     if (!isAdmin || selectedThread || !sortedIncomingThreads.length) return;
@@ -1465,8 +1505,8 @@ export default function App() {
                    <option value="unread">Unread</option>
                    <option value="recent">Son Mesaj</option>
                  </select>
-                 <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef}>
-                   {sortedIncomingThreads.map((thread) => {
+                 <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef} onScroll={handleAdminThreadQueueScroll}>
+                   {renderedIncomingThreads.map((thread) => {
                      const isWait = thread.last_sender_role === 'member';
                      const isActive = selectedThread?.member_id === thread.member_id && selectedThread?.virtual_profile_id === thread.virtual_profile_id;
                      const key = threadKey(thread.member_id, thread.virtual_profile_id);
@@ -1969,8 +2009,13 @@ export default function App() {
                <div className="p-5 border-b border-slate-100">
                  <h3 className="text-xl font-black text-slate-900">Mesajlarım</h3>
                </div>
-               <div className="flex-1 overflow-y-auto p-3 space-y-2" ref={profileListRef}>
-                 {sortedProfiles.map(p => (
+               <div
+                 className="overflow-y-auto p-3 space-y-2"
+                 ref={profileListRef}
+                 onScroll={handleUserProfileListScroll}
+                 style={{ maxHeight: `${USER_CHAT_VISIBLE_PROFILE_COUNT * 74}px` }}
+               >
+                 {renderedUserProfiles.map(p => (
                    <button key={p.id} onClick={() => setSelectedProfileId(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-white shadow-sm border border-slate-200' : 'hover:bg-slate-100 border border-transparent'}`}>
                      <div className="relative">
                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200">

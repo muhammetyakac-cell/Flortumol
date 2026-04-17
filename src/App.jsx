@@ -23,9 +23,12 @@ const NAME_SEEDS = [
 const NAME_SUFFIXES = ['', ' Nur', ' Su', ' Naz', ' Ada'];
 const FEMALE_NAMES = Array.from(new Set(NAME_SEEDS.flatMap((seed) => NAME_SUFFIXES.map((s) => `${seed}${s}`)))).slice(0, 250);
 const CITY_LIST = ['İstanbul','Ankara','İzmir','Bursa','Antalya','Eskişehir','Muğla','Mersin','Adana','Konya','Samsun','Trabzon','Gaziantep','Kayseri','Kocaeli','Tekirdağ','Çanakkale','Aydın','Balıkesir','Denizli','Sakarya','Hatay','Manisa','Edirne','Bolu','Kırklareli','Sinop','Rize','Giresun','Ordu'];
+const PRIORITY_CITY_LIST = ['İstanbul', 'Ankara', 'İzmir', 'Bursa', 'Antalya', 'Adana', 'Konya', 'Gaziantep', 'Şanlıurfa', 'Kocaeli'];
 const QUICK_REPLIES = ['Merhaba! 🌸', 'Naber, günün nasıl geçti?', 'Fotoğrafın çok güzel 😍', 'Kahve içelim mi? ☕'];
 const THREAD_TAGS = ['sicak_lead', 'soguk', 'takip_edilecek'];
 const BULK_TEMPLATES = ['Merhaba! 👋', 'Naber, günün nasıl?', 'Müsaitsen yaz ✨'];
+const LIST_BATCH_SIZE = 8;
+const USER_CHAT_VISIBLE_PROFILE_COUNT = 7;
 
 function hashToInt(text) {
   let hash = 0;
@@ -40,7 +43,7 @@ function buildHourlyOnlineMap(profiles, hourKey) {
   const list = profiles || [];
   if (!list.length) return map;
 
-  const targetOnlineCount = Math.min(list.length, Math.floor(list.length / 2) + 3);
+  const targetOnlineCount = Math.min(list.length, Math.floor(list.length / 2) + 5);
   const ranked = [...list]
     .map((profile) => ({
       id: profile.id,
@@ -85,6 +88,7 @@ export default function App() {
   const [unreadByProfile, setUnreadByProfile] = useState({});
   const [adminUnreadByThread, setAdminUnreadByThread] = useState({});
   const [onlineProfiles, setOnlineProfiles] = useState({});
+  const [forcedOnlineProfiles, setForcedOnlineProfiles] = useState({});
   const [typingLabel, setTypingLabel] = useState('');
   const [adminTypingByThread, setAdminTypingByThread] = useState({});
   const [aiSuggestions, setAiSuggestions] = useState([]);
@@ -128,6 +132,8 @@ export default function App() {
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedMemberProfile, setSelectedMemberProfile] = useState(null);
+  const [userProfileRenderCount, setUserProfileRenderCount] = useState(LIST_BATCH_SIZE);
+  const [adminThreadRenderCount, setAdminThreadRenderCount] = useState(LIST_BATCH_SIZE);
   const [memberModeration, setMemberModeration] = useState({ note: '', tags: '', blacklisted: false });
   const [coinPurchaseModalOpen, setCoinPurchaseModalOpen] = useState(false);
   const [zeroCoinPromptDismissed, setZeroCoinPromptDismissed] = useState(false);
@@ -250,10 +256,10 @@ export default function App() {
     }
   }, [loggedIn, isAdmin, memberProfile.coin_balance, zeroCoinPromptDismissed]);
 
-  const effectiveOnlineProfiles = useMemo(
-    () => (isAdmin ? onlineProfiles : buildHourlyOnlineMap(virtualProfiles, hourKey)),
-    [isAdmin, onlineProfiles, virtualProfiles, hourKey]
-  );
+  const effectiveOnlineProfiles = useMemo(() => {
+    if (isAdmin) return onlineProfiles;
+    return { ...buildHourlyOnlineMap(virtualProfiles, hourKey), ...forcedOnlineProfiles };
+  }, [isAdmin, onlineProfiles, virtualProfiles, hourKey, forcedOnlineProfiles]);
 
   const discoverProfiles = useMemo(() => {
     const filtered = sortedProfiles.filter((profile) => {
@@ -291,6 +297,14 @@ export default function App() {
   );
 
   const spotlightProfiles = useMemo(() => discoverProfiles.slice(0, 5), [discoverProfiles]);
+  const renderedUserProfiles = useMemo(
+    () => sortedProfiles.slice(0, userProfileRenderCount),
+    [sortedProfiles, userProfileRenderCount]
+  );
+  const renderedIncomingThreads = useMemo(
+    () => sortedIncomingThreads.slice(0, adminThreadRenderCount),
+    [sortedIncomingThreads, adminThreadRenderCount]
+  );
 
   const onboardingState = useMemo(() => {
     const hasPhoto = !!memberProfile.photo_url;
@@ -401,10 +415,16 @@ export default function App() {
   function getRandomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
   function buildRandomVirtualProfile() {
+    const fallbackCities = CITY_LIST.filter((city) => !PRIORITY_CITY_LIST.includes(city));
+    const weightedCities = [
+      ...Array.from({ length: 7 }, () => PRIORITY_CITY_LIST).flat(),
+      ...fallbackCities,
+    ];
+
     return {
       name: getRandomItem(FEMALE_NAMES),
       age: String(Math.floor(Math.random() * 14) + 20),
-      city: getRandomItem(CITY_LIST),
+      city: getRandomItem(weightedCities),
       gender: 'Kadın',
       hobbies: getRandomItem(['Kahve, seyahat, müzik','Yoga, kitap, yürüyüş','Sinema, fotoğraf, dans','Pilates, moda, sanat','Doğa, kamp, paten']),
     };
@@ -533,6 +553,34 @@ export default function App() {
   }, [incomingThreads, isAdmin]);
 
   useEffect(() => {
+    setUserProfileRenderCount((prev) => {
+      const minNeeded = Math.min(LIST_BATCH_SIZE, sortedProfiles.length || LIST_BATCH_SIZE);
+      if (prev < minNeeded) return minNeeded;
+      return Math.min(prev, sortedProfiles.length || LIST_BATCH_SIZE);
+    });
+  }, [sortedProfiles.length]);
+
+  useEffect(() => {
+    setAdminThreadRenderCount((prev) => {
+      const minNeeded = Math.min(LIST_BATCH_SIZE, sortedIncomingThreads.length || LIST_BATCH_SIZE);
+      if (prev < minNeeded) return minNeeded;
+      return Math.min(prev, sortedIncomingThreads.length || LIST_BATCH_SIZE);
+    });
+  }, [sortedIncomingThreads.length]);
+
+  function handleUserProfileListScroll(e) {
+    const target = e.currentTarget;
+    if (target.scrollTop + target.clientHeight < target.scrollHeight - 40) return;
+    setUserProfileRenderCount((prev) => Math.min(prev + LIST_BATCH_SIZE, sortedProfiles.length));
+  }
+
+  function handleAdminThreadQueueScroll(e) {
+    const target = e.currentTarget;
+    if (target.scrollTop + target.clientHeight < target.scrollHeight - 40) return;
+    setAdminThreadRenderCount((prev) => Math.min(prev + LIST_BATCH_SIZE, sortedIncomingThreads.length));
+  }
+
+  useEffect(() => {
     if (!isAdmin || selectedThread || !sortedIncomingThreads.length) return;
     setSelectedThread(sortedIncomingThreads[0]);
   }, [isAdmin, selectedThread, sortedIncomingThreads]);
@@ -629,6 +677,7 @@ export default function App() {
 
         if (changed.sender_role === 'virtual') {
           playNotificationSound();
+          setForcedOnlineProfiles((prev) => ({ ...prev, [changed.virtual_profile_id]: true }));
         }
 
         const viewingSelectedChat = userView === 'chat' && selectedProfileId && changed.virtual_profile_id === selectedProfileId;
@@ -1284,10 +1333,15 @@ export default function App() {
       {/* 🚀 GLOBAL HEADER */}
       <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-all ${isAdmin ? 'bg-slate-900/95 border-slate-800' : 'bg-white/80 border-slate-200'} px-6 py-4 shadow-sm`}>
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { if (loggedIn && !isAdmin) setUserView('discover'); }}
+            className={`text-2xl font-black tracking-tight flex items-center gap-2 ${loggedIn && !isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
+            title={loggedIn && !isAdmin ? 'Keşfet sayfasına dön' : undefined}
+          >
             <span className={`flex items-center justify-center w-8 h-8 rounded-lg shadow-inner ${isAdmin ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-white'}`}>✦</span>
             <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Flort.</span>
-          </h1>
+          </button>
 
           <div className="flex items-center gap-4">
             {isAdmin && loggedIn && (
@@ -1423,7 +1477,7 @@ export default function App() {
                 <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/20 to-indigo-600/40 mix-blend-overlay" />
                 <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80" alt="Cover" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" />
                 <div className="relative z-10 text-white">
-                  <h3 className="text-3xl font-black mb-2 leading-tight">Yapay Zeka ile<br/>Modern Flört Deneyimi</h3>
+                  <h3 className="text-3xl font-black mb-2 leading-tight">Gerçek Kişilerle<br/>Canlı Sohbet Deneyimi</h3>
                   <p className="text-slate-300 font-medium">Hemen katıl ve sana en uygun eşleşmeleri saniyeler içinde bul.</p>
                 </div>
               </div>
@@ -1451,8 +1505,8 @@ export default function App() {
                    <option value="unread">Unread</option>
                    <option value="recent">Son Mesaj</option>
                  </select>
-                 <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef}>
-                   {sortedIncomingThreads.map((thread) => {
+                 <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto" ref={threadQueueRef} onScroll={handleAdminThreadQueueScroll}>
+                   {renderedIncomingThreads.map((thread) => {
                      const isWait = thread.last_sender_role === 'member';
                      const isActive = selectedThread?.member_id === thread.member_id && selectedThread?.virtual_profile_id === thread.virtual_profile_id;
                      const key = threadKey(thread.member_id, thread.virtual_profile_id);
@@ -1843,11 +1897,11 @@ export default function App() {
             <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
             <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
 
-            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
+            <div className="relative overflow-hidden rounded-[2rem] p-4 md:p-6 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
               <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
               <h2 className="relative text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
               <p className="relative text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
-              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
                   <p className="text-lg font-black text-amber-900">{memberProfile.coin_balance ?? 0} jeton</p>
@@ -1862,7 +1916,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
                   <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Aktif Profil</p>
                   <p className="text-xl font-black text-slate-900">{activeProfileCount}</p>
@@ -1877,7 +1931,7 @@ export default function App() {
                 </div>
               </div>
               
-              <div className="mt-8 flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+              <div className="mt-5 flex flex-col md:flex-row items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
                 <select value={genderFilter} onChange={(e)=>setGenderFilter(e.target.value)} className="w-full md:w-40 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400">
                   <option value="all">Tüm Cinsiyetler</option>
@@ -1955,8 +2009,13 @@ export default function App() {
                <div className="p-5 border-b border-slate-100">
                  <h3 className="text-xl font-black text-slate-900">Mesajlarım</h3>
                </div>
-               <div className="flex-1 overflow-y-auto p-3 space-y-2" ref={profileListRef}>
-                 {sortedProfiles.map(p => (
+               <div
+                 className="overflow-y-auto p-3 space-y-2"
+                 ref={profileListRef}
+                 onScroll={handleUserProfileListScroll}
+                 style={{ maxHeight: `${USER_CHAT_VISIBLE_PROFILE_COUNT * 74}px` }}
+               >
+                 {renderedUserProfiles.map(p => (
                    <button key={p.id} onClick={() => setSelectedProfileId(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-white shadow-sm border border-slate-200' : 'hover:bg-slate-100 border border-transparent'}`}>
                      <div className="relative">
                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200">
@@ -1987,9 +2046,23 @@ export default function App() {
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
                          {selectedProfile.photo_url && <img src={selectedProfile.photo_url} className="w-full h-full object-cover" />}
                       </div>
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-slate-900 leading-tight">{selectedProfile.name}</h3>
                         <p className="text-xs font-semibold text-emerald-500">{effectiveOnlineProfiles[selectedProfile.id] ? 'Çevrimiçi' : 'Çevrimdışı'}</p>
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                          <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Şehir</p>
+                            <p className="font-semibold text-slate-700 truncate">{selectedProfile.city || 'Belirtilmemiş'}</p>
+                          </div>
+                          <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Yaş</p>
+                            <p className="font-semibold text-slate-700">{selectedProfile.age || '-'}</p>
+                          </div>
+                          <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Hobiler</p>
+                            <p className="font-semibold text-slate-700 truncate">{selectedProfile.hobbies || 'Belirtilmemiş'}</p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

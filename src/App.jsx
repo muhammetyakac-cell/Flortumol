@@ -1293,10 +1293,15 @@ export default function App() {
       {/* 🚀 GLOBAL HEADER */}
       <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-all ${isAdmin ? 'bg-slate-900/95 border-slate-800' : 'bg-white/80 border-slate-200'} px-6 py-4 shadow-sm`}>
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { if (loggedIn && !isAdmin) setUserView('discover'); }}
+            className={`text-2xl font-black tracking-tight flex items-center gap-2 ${loggedIn && !isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
+            title={loggedIn && !isAdmin ? 'Keşfet sayfasına dön' : undefined}
+          >
             <span className={`flex items-center justify-center w-8 h-8 rounded-lg shadow-inner ${isAdmin ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-white'}`}>✦</span>
             <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Flort.</span>
-          </h1>
+          </button>
 
           <div className="flex items-center gap-4">
             {isAdmin && loggedIn && (
@@ -1852,11 +1857,11 @@ export default function App() {
             <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
             <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
 
-            <div className="relative overflow-hidden rounded-[2rem] p-6 md:p-8 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50 md:max-w-[70%] md:mx-auto">
+            <div className="relative overflow-hidden rounded-[2rem] p-4 md:p-6 border border-slate-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
               <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
               <h2 className="relative text-3xl font-black text-slate-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
               <p className="relative text-slate-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
-              <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
                   <p className="text-lg font-black text-amber-900">{memberProfile.coin_balance ?? 0} jeton</p>
@@ -1871,7 +1876,7 @@ export default function App() {
                 </button>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-2xl bg-white/70 border border-slate-200/70 px-4 py-3 backdrop-blur-md">
                   <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">Aktif Profil</p>
                   <p className="text-xl font-black text-slate-900">{activeProfileCount}</p>
@@ -1886,7 +1891,7 @@ export default function App() {
                 </div>
               </div>
               
-              <div className="mt-8 flex flex-col md:flex-row items-center gap-4 bg-slate-50 p-2 rounded-2xl border border-slate-100">
+              <div className="mt-5 flex flex-col md:flex-row items-center gap-3 bg-slate-50 p-2 rounded-2xl border border-slate-100">
                 <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
                 <select value={genderFilter} onChange={(e)=>setGenderFilter(e.target.value)} className="w-full md:w-40 bg-white border border-slate-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400">
                   <option value="all">Tüm Cinsiyetler</option>
@@ -2001,7 +2006,7 @@ export default function App() {
                         <p className="text-xs font-semibold text-emerald-500">{effectiveOnlineProfiles[selectedProfile.id] ? 'Çevrimiçi' : 'Çevrimdışı'}</p>
                         <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
                           <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
-                            <p className="font-bold text-slate-500 uppercase tracking-wide">Kişi Bilgisi</p>
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Şehir</p>
                             <p className="font-semibold text-slate-700 truncate">{selectedProfile.city || 'Belirtilmemiş'}</p>
                           </div>
                           <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
@@ -2009,7 +2014,7 @@ export default function App() {
                             <p className="font-semibold text-slate-700">{selectedProfile.age || '-'}</p>
                           </div>
                           <div className="px-2 py-1 rounded-lg border border-slate-200 bg-slate-50">
-                            <p className="font-bold text-slate-500 uppercase tracking-wide">Genel Bilgiler</p>
+                            <p className="font-bold text-slate-500 uppercase tracking-wide">Hobiler</p>
                             <p className="font-semibold text-slate-700 truncate">{selectedProfile.hobbies || 'Belirtilmemiş'}</p>
                           </div>
                         </div>

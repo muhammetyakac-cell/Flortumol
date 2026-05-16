@@ -77,6 +77,7 @@ export default function App() {
   const [selectedProfileId, setSelectedProfileId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
+  const [focusedMessageId, setFocusedMessageId] = useState(null);
 
   const [profileForm, setProfileForm] = useState(initialProfile);
   const [incomingThreads, setIncomingThreads] = useState([]);
@@ -153,6 +154,8 @@ export default function App() {
   const [hourKey, setHourKey] = useState(() => new Date().toISOString().slice(0, 13));
   
   const chatBoxRef = useRef(null);
+  const latestMemberMessageRef = useRef(null);
+  const messageInputRef = useRef(null);
   const adminChatBoxRef = useRef(null);
   const profileListRef = useRef(null);
   const threadQueueRef = useRef(null);
@@ -533,9 +536,16 @@ export default function App() {
 
   useEffect(() => {
     if (!memberSession || isAdmin) return;
+    const focusTarget = latestMemberMessageRef.current;
+    if (focusTarget && focusedMessageId) {
+      window.requestAnimationFrame(() => {
+        focusTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+      return;
+    }
     if (!chatBoxRef.current) return;
     chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight;
-  }, [messages, memberSession, isAdmin]);
+  }, [messages, memberSession, isAdmin, focusedMessageId]);
 
   useEffect(() => {
     if (!isAdmin || !adminChatBoxRef.current) return;
@@ -938,20 +948,46 @@ export default function App() {
 
   async function sendMessage() {
     if (!memberSession || !selectedProfileId || !newMessage.trim()) return;
+    const rawMessage = newMessage.trim();
     const hasCoin = await consumeCoins(COIN_COST_PER_MESSAGE);
     if (!hasCoin) { setCoinPurchaseModalOpen(true); return setStatus(`Yetersiz jeton.`); }
 
     const slashCommands = { '/selam': 'Selam 👋', '/kahve': 'Kahve içelim mi? ☕' };
-    const normalizedMessage = slashCommands[newMessage.trim().toLowerCase()] || newMessage.trim();
+    const normalizedMessage = slashCommands[rawMessage.toLowerCase()] || rawMessage;
+    const activeProfileId = selectedProfileId;
+    const optimisticId = `optimistic-${Date.now()}`;
+    const optimisticMessage = {
+      id: optimisticId,
+      member_id: memberSession.id,
+      virtual_profile_id: activeProfileId,
+      sender_role: 'member',
+      content: normalizedMessage,
+      seen_by_member: true,
+      seen_by_admin: false,
+      created_at: new Date().toISOString(),
+    };
 
-    const { error } = await supabase.from('messages').insert({
-      member_id: memberSession.id, virtual_profile_id: selectedProfileId, sender_role: 'member', content: normalizedMessage, seen_by_member: true, seen_by_admin: false,
-    });
-    if (error) return setStatus(error.message);
-    recordEngagement('member_message', memberSession.id, selectedProfileId, { source: 'chat_input' });
-    setOnboardingActionCount((prev) => prev + 1);
     setNewMessage('');
-    fetchMessages(selectedProfileId);
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setFocusedMessageId(optimisticId);
+    messageInputRef.current?.focus();
+
+    const { data, error } = await supabase.from('messages').insert({
+      member_id: memberSession.id, virtual_profile_id: activeProfileId, sender_role: 'member', content: normalizedMessage, seen_by_member: true, seen_by_admin: false,
+    }).select('*').single();
+    if (error) {
+      setMessages((prev) => prev.filter((msg) => msg.id !== optimisticId));
+      setFocusedMessageId(null);
+      setNewMessage(rawMessage);
+      return setStatus(error.message);
+    }
+    recordEngagement('member_message', memberSession.id, activeProfileId, { source: 'chat_input' });
+    setOnboardingActionCount((prev) => prev + 1);
+    if (data) {
+      setMessages((prev) => prev.map((msg) => (msg.id === optimisticId ? data : msg)));
+      setFocusedMessageId(data.id);
+    }
+    fetchMessages(activeProfileId);
   }
 
   async function sendReaction(profileId, reactionType) {
@@ -2066,10 +2102,16 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50/50" ref={chatBoxRef}>
-                      {messages.map(msg => (
-                        <div key={msg.id} className={`flex flex-col max-w-[75%] ${msg.sender_role === 'member' ? 'items-end ml-auto' : 'items-start mr-auto'}`}>
-                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm ${msg.sender_role === 'member' ? 'bg-fuchsia-500 text-white msg-tail-member' : 'bg-white border border-slate-200 text-slate-800 msg-tail-virtual'}`}>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-fuchsia-50/70 via-white to-slate-50 border-y border-fuchsia-100 shadow-inner" ref={chatBoxRef}>
+                      {messages.map(msg => {
+                        const isFocusedMemberMessage = msg.sender_role === 'member' && msg.id === focusedMessageId;
+                        return (
+                        <div
+                          key={msg.id}
+                          ref={isFocusedMemberMessage ? latestMemberMessageRef : null}
+                          className={`flex flex-col max-w-[75%] scroll-mt-28 ${msg.sender_role === 'member' ? 'items-end ml-auto' : 'items-start mr-auto'}`}
+                        >
+                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 ${msg.sender_role === 'member' ? 'bg-fuchsia-500 text-white msg-tail-member' : 'bg-white border border-slate-200 text-slate-800 msg-tail-virtual'} ${isFocusedMemberMessage ? 'ring-4 ring-fuchsia-300/70 shadow-xl scale-[1.02]' : ''}`}>
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                           </div>
                           <div className="flex items-center gap-1 mt-1 px-1">
@@ -2077,24 +2119,26 @@ export default function App() {
                             {msg.sender_role === 'member' && <span className={`text-[10px] font-bold ${msg.seen_by_admin ? 'text-blue-500' : 'text-slate-300'}`}>✓✓</span>}
                           </div>
                         </div>
-                      ))}
+                      );})}
                       {typingLabel && <div className="text-xs font-bold text-slate-400 ml-2 animate-pulse">{typingLabel}</div>}
                     </div>
 
-                    <div className="p-4 bg-white border-t border-slate-100">
+                    <div className="p-4 bg-white border-t border-fuchsia-100 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
                       <div className="flex items-center justify-between mb-2 px-1">
                         <p className="text-xs font-bold text-slate-500">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
+                        <p className="hidden sm:block text-[11px] font-black uppercase tracking-wide text-fuchsia-500">Enter ile gönder · Shift+Enter yeni satır</p>
                         {coinSpendFeedback && <span className="text-xs font-black text-rose-600">{coinSpendFeedback}</span>}
                       </div>
-                      <div className="flex items-end gap-3 bg-slate-50 border border-slate-200 rounded-2xl p-2 focus-within:border-fuchsia-400 focus-within:ring-4 focus-within:ring-fuchsia-500/10 transition-all">
+                      <div className="flex items-end gap-3 bg-gradient-to-r from-fuchsia-50 via-white to-rose-50 border-2 border-fuchsia-300 rounded-3xl p-3 shadow-lg shadow-fuchsia-500/10 focus-within:border-fuchsia-500 focus-within:ring-4 focus-within:ring-fuchsia-500/20 transition-all">
                         <textarea
+                          ref={messageInputRef}
                           value={newMessage}
                           onChange={(e) => { setNewMessage(e.target.value); autoResizeTextarea(e.target, 120); }}
                           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                           placeholder="Mesajınızı yazın..."
-                          className="flex-1 bg-transparent px-3 py-2 text-sm focus:outline-none resize-none min-h-[40px] max-h-[120px]"
+                          className="flex-1 bg-transparent px-3 py-2 text-base font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none resize-none min-h-[48px] max-h-[120px]"
                         />
-                        <button onClick={sendMessage} className="w-10 h-10 flex items-center justify-center bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-md transition-transform active:scale-95">
+                        <button onClick={sendMessage} className="w-12 h-12 flex items-center justify-center bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-2xl shadow-md shadow-fuchsia-500/30 transition-transform active:scale-95">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                         </button>
                       </div>

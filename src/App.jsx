@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { supabase } from './supabase';
 import { useAuth } from './hooks/useAuth';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
@@ -2243,6 +2244,7 @@ export default function App() {
         </div>
       )}
 
+      <Analytics />
     </div>
   );
 }

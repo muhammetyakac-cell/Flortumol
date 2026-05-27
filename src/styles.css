@@ -1,16 +1,40 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+
+  --color-brand-50: #fffbf7;
+  --color-brand-100: #ffeedd;
+  --color-brand-200: #ffd4b3;
+  --color-brand-300: #ffb988;
+  --color-brand-400: #ff985c;
+  --color-brand-500: #ff7e40;
+  --color-brand-600: #e6652e;
+  --color-brand-700: #bf4e1e;
+  --color-brand-800: #993a15;
+  --color-brand-900: #7d3013;
+
+  --color-accent-400: #ff6b81;
+  --color-accent-500: #ff4757;
+  --color-accent-600: #e03a49;
+
+  --color-surface-50: #faf9f8;
+  --color-surface-100: #f5f4f2;
+  --color-surface-200: #e8e6e1;
+  --color-surface-800: #44403c;
+  --color-surface-900: #292524;
+}
 
 @layer base {
   html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-[#F4F7FB] text-slate-800 overflow-x-hidden;
+    @apply bg-slate-950 text-slate-100 overflow-x-hidden;
   }
 }
 

@@ -1387,12 +1387,12 @@ export default function App() {
               title={!isAdmin ? 'Keşfet sayfasına dön' : undefined}
             >
               <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
-              <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Sevgili Bul</span>
+              <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-accent-500'}>Sevgili Bul</span>
             </button>
           ) : (
             <Link to="/" className="text-2xl font-black tracking-tight flex items-center gap-2 cursor-pointer">
               <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Sevgili Bul</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-accent-500">Sevgili Bul</span>
             </Link>
           )}
           <div className="flex items-center gap-4">

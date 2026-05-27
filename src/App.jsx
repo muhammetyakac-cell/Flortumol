@@ -1374,10 +1374,10 @@ export default function App() {
 
   // --- MODERNIZED UI RENDERING ---
   return (
-    <div className="min-h-screen bg-surface-100 text-surface-900 flex flex-col font-sans selection:bg-brand-500/30">
+    <div className="min-h-screen bg-slate-800 text-white flex flex-col font-sans selection:bg-brand-500/30">
       
       {/* 🚀 GLOBAL HEADER */}
-      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-all ${isAdmin ? 'bg-surface-900/95 border-slate-800' : 'bg-surface-50/80 border-surface-200'} px-6 py-4 shadow-sm`}>
+      <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-all ${isAdmin ? 'bg-surface-900/95 border-slate-800' : 'bg-slate-900/80 border-slate-700'} px-6 py-4 shadow-sm`}>
         <div className="max-w-[1440px] mx-auto flex items-center justify-between">
           {loggedIn ? (
             <button
@@ -1408,9 +1408,9 @@ export default function App() {
 
             {loggedIn && !isAdmin && (
               <div className="hidden md:flex items-center gap-3">
-                <nav className="flex bg-surface-50/50 p-1 rounded-2xl border border-surface-200/50 shadow-sm backdrop-blur-md">
+                <nav className="flex bg-slate-900/50 p-1 rounded-2xl border border-slate-700/50 shadow-sm backdrop-blur-md">
                   {['discover', 'chat', 'profile', 'coins'].map((view) => (
-                    <button key={view} onClick={() => setUserView(view)} className={`relative px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all duration-300 ${userView === view ? 'bg-surface-900 text-white shadow-lg shadow-slate-900/20' : 'text-stone-600 hover:bg-surface-200 hover:text-surface-900'}`}>
+                    <button key={view} onClick={() => setUserView(view)} className={`relative px-5 py-2 text-sm font-bold rounded-xl capitalize transition-all duration-300 ${userView === view ? 'bg-surface-900 text-white shadow-lg shadow-slate-900/20' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
                       {view === 'discover' ? 'Keşfet' : view === 'chat' ? 'Mesajlar' : view === 'profile' ? 'Profil' : 'Cüzdan'}
                       {view === 'chat' && totalUnreadCount > 0 && <span className="absolute top-2 right-3 w-2 h-2 bg-rose-500 rounded-full animate-pulse" />}
                     </button>
@@ -1427,14 +1427,14 @@ export default function App() {
               </div>
             )}
 
-            <div className="flex items-center gap-3 border-l pl-4 border-surface-200/20">
+            <div className="flex items-center gap-3 border-l pl-4 border-slate-700/20">
                {!loggedIn && (
-                <button onClick={() => { setMode(mode === 'user' ? 'admin' : 'user'); setShowAuthModal(true); }} className={`text-sm font-semibold underline underline-offset-4 transition-colors ${isAdmin ? 'text-slate-300 hover:text-white' : 'text-stone-500 hover:text-surface-900'}`}>
+                <button onClick={() => { setMode(mode === 'user' ? 'admin' : 'user'); setShowAuthModal(true); }} className={`text-sm font-semibold underline underline-offset-4 transition-colors ${isAdmin ? 'text-slate-300 hover:text-white' : 'text-slate-400 hover:text-white'}`}>
                   {mode === 'user' ? 'Admin Girişi' : 'Kullanıcı Girişi'}
                 </button>
               )}
               {loggedIn && (
-                <button onClick={handleSignOut} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${isAdmin ? 'bg-slate-800 text-rose-400 hover:bg-slate-700' : 'bg-surface-200 text-slate-700 hover:bg-slate-200'}`}>Çıkış</button>
+                <button onClick={handleSignOut} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-all ${isAdmin ? 'bg-slate-800 text-rose-400 hover:bg-slate-700' : 'bg-slate-800 text-slate-700 hover:bg-slate-200'}`}>Çıkış</button>
               )}
             </div>
           </div>
@@ -1470,7 +1470,7 @@ export default function App() {
         <div className="fixed bottom-6 right-6 z-50 animate-fade-in max-w-sm w-full bg-surface-900 text-white px-5 py-4 rounded-2xl shadow-2xl border border-slate-700 flex items-start gap-3">
           <span className="text-xl">🔔</span>
           <p className="text-sm font-medium leading-tight pt-0.5">{status}</p>
-          <button onClick={() => setStatus('')} className="ml-auto text-stone-400 hover:text-white">✕</button>
+          <button onClick={() => setStatus('')} className="ml-auto text-slate-500 hover:text-white">✕</button>
         </div>
       )}
 
@@ -1492,7 +1492,7 @@ export default function App() {
               </Routes>
               
               {/* --- PUBLIC FOOTER --- */}
-              <footer className="bg-surface-900 text-stone-400 py-12 px-6 mt-auto">
+              <footer className="bg-surface-900 text-slate-500 py-12 px-6 mt-auto">
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
                   <div className="col-span-1 md:col-span-2">
                     <div className="text-2xl font-black text-white flex items-center gap-2 mb-4">
@@ -1533,23 +1533,23 @@ export default function App() {
                 aria-modal="true"
                 aria-label="Giriş veya Kayıt Ol"
               >
-                <div className="w-full max-w-[900px] grid md:grid-cols-2 bg-surface-50 rounded-[2rem] shadow-2xl overflow-hidden border border-surface-200 animate-fade-in">
+                <div className="w-full max-w-[900px] grid md:grid-cols-2 bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-700 animate-fade-in">
 
                   {/* Modal Left: Form */}
                   <div className="p-8 md:p-10 flex flex-col justify-center">
                     <button
                       onClick={() => setShowAuthModal(false)}
-                      className="self-end mb-4 text-stone-400 hover:text-slate-700 text-2xl leading-none"
+                      className="self-end mb-4 text-slate-500 hover:text-slate-700 text-2xl leading-none"
                       aria-label="Kapat"
                     >✕</button>
                     <div className="mb-6">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-4 ${mode === 'admin' ? 'bg-indigo-100 text-indigo-700' : 'bg-fuchsia-100 text-fuchsia-700'}`}>
                         {mode === 'admin' ? 'YÖNETİCİ SİSTEMİ' : 'FLORT PLATFORMU'}
                       </span>
-                      <h2 className="text-2xl font-black text-surface-900 tracking-tight">
+                      <h2 className="text-2xl font-black text-white tracking-tight">
                         {mode === 'admin' ? 'Kontrol Paneli' : 'Eşleşmeye Başla'}
                       </h2>
-                      <p className="text-stone-500 mt-1 font-medium text-sm">Lütfen devam etmek için giriş yapın.</p>
+                      <p className="text-slate-400 mt-1 font-medium text-sm">Lütfen devam etmek için giriş yapın.</p>
                     </div>
 
                     <div className="space-y-3">
@@ -1559,7 +1559,7 @@ export default function App() {
                         disabled={mode === 'admin'}
                         value={mode === 'admin' ? '' : authForm.username}
                         onChange={(e) => setAuthForm((st) => ({ ...st, username: e.target.value }))}
-                        className="w-full px-4 py-3.5 bg-surface-100 border border-surface-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all disabled:opacity-50"
+                        className="w-full px-4 py-3.5 bg-slate-800 border border-slate-700 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all disabled:opacity-50"
                       />
                       <input
                         type="password"
@@ -1567,7 +1567,7 @@ export default function App() {
                         value={authForm.password}
                         onChange={(e) => setAuthForm((st) => ({ ...st, password: e.target.value }))}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSignIn(); }}
-                        className="w-full px-4 py-3.5 bg-surface-100 border border-surface-200 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all"
+                        className="w-full px-4 py-3.5 bg-slate-800 border border-slate-700 rounded-2xl text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all"
                       />
                     </div>
 
@@ -1576,7 +1576,7 @@ export default function App() {
                         {loading ? 'İşleniyor...' : 'Giriş Yap'}
                       </button>
                       {mode !== 'admin' && (
-                        <button onClick={handleSignUp} disabled={loading} className="w-full bg-surface-50 hover:bg-surface-100 text-surface-900 border border-surface-200 font-bold py-3.5 rounded-2xl transition-transform active:scale-[0.98]">
+                        <button onClick={handleSignUp} disabled={loading} className="w-full bg-slate-900 hover:bg-slate-800 text-white border border-slate-700 font-bold py-3.5 rounded-2xl transition-transform active:scale-[0.98]">
                           Yeni Hesap Oluştur
                         </button>
                       )}
@@ -1603,15 +1603,15 @@ export default function App() {
             
             {/* Admin Left Sidebar */}
             <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
-               <div className="bg-surface-50 rounded-2xl p-4 border border-surface-200 shadow-sm">
-                 <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-3">Mesaj Bekleyenler</h3>
+               <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
+                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Mesaj Bekleyenler</h3>
                  <div className="grid grid-cols-2 gap-2 mb-3">
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'bg-surface-200 text-stone-600'}`}>Yanıt Bekleyen</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'bg-surface-200 text-stone-600'}`}>SLA Riski</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'bg-surface-200 text-stone-600'}`}>Atanmamış</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'bg-surface-200 text-stone-600'}`}>Blacklist</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-800 text-slate-300'}`}>Yanıt Bekleyen</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'bg-slate-800 text-slate-300'}`}>SLA Riski</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'bg-slate-800 text-slate-300'}`}>Atanmamış</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'bg-slate-800 text-slate-300'}`}>Blacklist</button>
                  </div>
-                 <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 bg-surface-100 border border-surface-200 rounded-lg px-2 py-2 text-xs font-semibold">
+                 <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs font-semibold">
                    <option value="sla_unread_recent">SLA + Unread + Son Mesaj</option>
                    <option value="sla">SLA (Bekleme Süresi)</option>
                    <option value="unread">Unread</option>
@@ -1625,7 +1625,7 @@ export default function App() {
                      const ops = threadOpsByKey[key] || {};
                      const waitMin = thread.last_message_at ? Math.max(0, (Date.now() - new Date(thread.last_message_at).getTime()) / 60000) : 0;
                      return (
-                       <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-surface-100 border-surface-100 hover:border-slate-300'}`}>
+                       <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-800 border-slate-800 hover:border-slate-300'}`}>
                          <div className="relative flex-shrink-0">
                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700">
                              {thread.virtual_name?.slice(0, 1)}
@@ -1633,11 +1633,11 @@ export default function App() {
                            {isWait && <div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 border-2 border-white rounded-full" />}
                          </div>
                          <div className="flex-1 min-w-0">
-                           <p className="text-sm font-bold text-surface-900 truncate">{thread.member_username} <span className="text-stone-400 font-normal">→ {thread.virtual_name}</span></p>
-                           <p className="text-xs text-stone-500 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
+                           <p className="text-sm font-bold text-white truncate">{thread.member_username} <span className="text-slate-500 font-normal">→ {thread.virtual_name}</span></p>
+                           <p className="text-xs text-slate-400 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
                            <div className="flex flex-wrap gap-1 mt-1">
                              {ops.priority && <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ops.priority === 'high' ? 'bg-rose-100 text-rose-700' : ops.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{ops.priority.toUpperCase()}</span>}
-                             {ops.assigned_admin ? <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">{ops.assigned_admin}</span> : <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-stone-600">Atanmamış</span>}
+                             {ops.assigned_admin ? <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">{ops.assigned_admin}</span> : <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-300">Atanmamış</span>}
                              {waitMin >= 15 && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">SLA Risk</span>}
                            </div>
                          </div>
@@ -1658,32 +1658,32 @@ export default function App() {
                  </div>
                </div>
 
-               <div className="bg-surface-50 rounded-2xl p-4 border border-surface-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-3">Toplu Mesaj</h3>
-                  <p className="text-xs text-stone-500 mb-3">Seçili sohbetlere tek seferde gönderim yap. Önce üstten sohbetleri işaretle.</p>
-                  <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full mb-2 bg-surface-100 border border-surface-200 rounded-xl px-3 py-2 text-sm">
+               <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Toplu Mesaj</h3>
+                  <p className="text-xs text-slate-400 mb-3">Seçili sohbetlere tek seferde gönderim yap. Önce üstten sohbetleri işaretle.</p>
+                  <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full mb-2 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
                     {BULK_TEMPLATES.map((tmpl) => <option key={tmpl} value={tmpl}>{tmpl}</option>)}
                   </select>
-                  <textarea value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full bg-surface-100 border border-surface-200 rounded-xl p-3 text-sm min-h-[90px] focus:outline-none focus:border-indigo-400" placeholder="Toplu mesaj şablonu..." />
+                  <textarea value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm min-h-[90px] focus:outline-none focus:border-indigo-400" placeholder="Toplu mesaj şablonu..." />
                   <div className="mt-3 flex items-center gap-2">
                     <button onClick={sendBulkTemplate} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm">Seçili Sohbetlere Gönder</button>
-                    <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 bg-surface-200 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold">Temizle</button>
+                    <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 bg-slate-800 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold">Temizle</button>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-surface-100 space-y-2">
-                    <h4 className="text-xs font-bold text-stone-500 uppercase">Toplu Operasyon</h4>
-                    <select value={bulkPriority} onChange={(e) => setBulkPriority(e.target.value)} className="w-full bg-surface-100 border border-surface-200 rounded-lg px-2 py-2 text-xs">
+                  <div className="mt-4 pt-3 border-t border-slate-800 space-y-2">
+                    <h4 className="text-xs font-bold text-slate-400 uppercase">Toplu Operasyon</h4>
+                    <select value={bulkPriority} onChange={(e) => setBulkPriority(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs">
                       <option value="">Öncelik Seç</option>
                       <option value="high">Yüksek</option>
                       <option value="medium">Orta</option>
                       <option value="low">Düşük</option>
                     </select>
-                    <select value={bulkStatusTag} onChange={(e) => setBulkStatusTag(e.target.value)} className="w-full bg-surface-100 border border-surface-200 rounded-lg px-2 py-2 text-xs">
+                    <select value={bulkStatusTag} onChange={(e) => setBulkStatusTag(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs">
                       <option value="">Tag Atama (opsiyonel)</option>
                       {THREAD_TAGS.map((tag) => <option key={`bulk-${tag}`} value={tag}>{tag}</option>)}
                     </select>
-                    <input value={bulkAssignTo} onChange={(e) => setBulkAssignTo(e.target.value)} placeholder="Sorumlu admin (örn: ayse_admin)" className="w-full bg-surface-100 border border-surface-200 rounded-lg px-2 py-2 text-xs" />
-                    <input value={bulkFollowUpDate} onChange={(e) => setBulkFollowUpDate(e.target.value)} type="date" className="w-full bg-surface-100 border border-surface-200 rounded-lg px-2 py-2 text-xs" />
-                    <select value={bulkBlacklistMode} onChange={(e) => setBulkBlacklistMode(e.target.value)} className="w-full bg-surface-100 border border-surface-200 rounded-lg px-2 py-2 text-xs">
+                    <input value={bulkAssignTo} onChange={(e) => setBulkAssignTo(e.target.value)} placeholder="Sorumlu admin (örn: ayse_admin)" className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs" />
+                    <input value={bulkFollowUpDate} onChange={(e) => setBulkFollowUpDate(e.target.value)} type="date" className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs" />
+                    <select value={bulkBlacklistMode} onChange={(e) => setBulkBlacklistMode(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs">
                       <option value="ignore">Blacklist Değiştirme</option>
                       <option value="true">Blacklist: Aç</option>
                       <option value="false">Blacklist: Kapat</option>
@@ -1692,8 +1692,8 @@ export default function App() {
                   </div>
                </div>
 
-               <div className="bg-surface-50 rounded-2xl p-4 border border-surface-200 shadow-sm">
-                  <h3 className="text-sm font-bold text-stone-400 uppercase tracking-wider mb-3">SLA & Durum</h3>
+               <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
+                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">SLA & Durum</h3>
                   <div className="space-y-2 text-sm text-slate-700">
                     <div className="flex justify-between"><span>Bekleyen Mesaj:</span> <strong className="text-rose-600">{slaStats.waitingCount}</strong></div>
                     <div className="flex justify-between"><span>Ort. Bekleme:</span> <strong>{slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`}</strong></div>
@@ -1702,41 +1702,41 @@ export default function App() {
             </aside>
 
             {/* Admin Center - Chat Tab */}
-            <main className="flex-1 bg-surface-50 rounded-2xl border border-surface-200 shadow-sm flex flex-col overflow-hidden">
+            <main className="flex-1 bg-slate-900 rounded-2xl border border-slate-700 shadow-sm flex flex-col overflow-hidden">
                {adminTab === 'chat' && (
                  <>
-                    <div className="px-6 py-4 border-b border-surface-100 flex items-center justify-between bg-surface-100/50">
+                    <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
                       <div>
-                        <h2 className="text-lg font-bold text-surface-900">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
+                        <h2 className="text-lg font-bold text-white">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
                         <p className="text-xs font-semibold text-emerald-600">Sanal Profil Modülü</p>
                         {selectedThread && (
-                          <p className="text-[11px] font-semibold text-stone-500 mt-1">
+                          <p className="text-[11px] font-semibold text-slate-400 mt-1">
                             Öncelik: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.priority || '-')} •
                             Sorumlu: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.assigned_admin || 'Atanmamış')}
                           </p>
                         )}
                       </div>
-                      <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="bg-surface-50 border border-surface-200 text-sm font-medium py-1.5 px-3 rounded-lg outline-none">
+                      <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="bg-slate-900 border border-slate-700 text-sm font-medium py-1.5 px-3 rounded-lg outline-none">
                         {THREAD_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
                       </select>
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 space-y-4" ref={adminChatBoxRef}>
-                       {!selectedThread && <div className="h-full flex items-center justify-center text-stone-400 font-medium">Soldan bir konuşma seçin.</div>}
+                       {!selectedThread && <div className="h-full flex items-center justify-center text-slate-500 font-medium">Soldan bir konuşma seçin.</div>}
                        {threadMessages.map((msg) => (
                          <div key={msg.id} className={`flex flex-col max-w-[80%] ${msg.sender_role === 'member' ? 'items-start mr-auto' : 'items-end ml-auto'}`}>
-                            <span className="text-[11px] font-bold text-stone-400 mb-1 px-1">
+                            <span className="text-[11px] font-bold text-slate-500 mb-1 px-1">
                               {msg.sender_role === 'member' ? selectedThread?.member_username : selectedThread?.virtual_name}
                             </span>
-                            <div className={`px-4 py-2.5 rounded-2xl shadow-sm ${msg.sender_role === 'member' ? 'bg-surface-200 text-surface-900 msg-tail-member' : 'bg-indigo-600 text-white msg-tail-virtual'}`}>
+                            <div className={`px-4 py-2.5 rounded-2xl shadow-sm ${msg.sender_role === 'member' ? 'bg-slate-800 text-white msg-tail-member' : 'bg-indigo-600 text-white msg-tail-virtual'}`}>
                               <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.content}</p>
                             </div>
-                            <span className="text-[10px] text-stone-400 mt-1 px-1">{formatTime(msg.created_at)}</span>
+                            <span className="text-[10px] text-slate-500 mt-1 px-1">{formatTime(msg.created_at)}</span>
                          </div>
                        ))}
                     </div>
 
-                    <div className="p-4 bg-surface-50 border-t border-surface-100 space-y-3">
+                    <div className="p-4 bg-slate-900 border-t border-slate-800 space-y-3">
                        {!!aiSuggestions.length && (
                          <div className="flex flex-wrap gap-2">
                            {aiSuggestions.map((sugg) => (
@@ -1747,7 +1747,7 @@ export default function App() {
                          </div>
                        )}
                        <div className="flex items-end gap-3">
-                         <button onClick={fetchAiSuggestions} disabled={loadingSuggestions} className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-surface-200 hover:bg-slate-200 text-stone-600 rounded-xl transition-colors" title="AI Önerisi Al">
+                         <button onClick={fetchAiSuggestions} disabled={loadingSuggestions} className="w-12 h-12 flex-shrink-0 flex items-center justify-center bg-slate-800 hover:bg-slate-200 text-slate-300 rounded-xl transition-colors" title="AI Önerisi Al">
                             🤖
                          </button>
                          <textarea
@@ -1755,7 +1755,7 @@ export default function App() {
                            onChange={(e) => { setAdminReply(e.target.value); autoResizeTextarea(e.target, 150); }}
                            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAdminReply(); } }}
                            placeholder="Kullanıcıya yanıt yazın..."
-                           className="flex-1 bg-surface-100 border border-surface-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none min-h-[48px]"
+                           className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 resize-none min-h-[48px]"
                          />
                          <button onClick={sendAdminReply} className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md transition-colors h-12">
                            Gönder
@@ -1768,7 +1768,7 @@ export default function App() {
                {/* Admin Center - Stats Tab */}
                {adminTab === 'stats' && (
                  <div className="p-6 md:p-8 overflow-y-auto">
-                    <h2 className="text-2xl font-bold mb-4 text-surface-900">Stats Dashboard ({statsRange === 'daily' ? 'Günlük' : statsRange === 'weekly' ? 'Haftalık' : 'Aylık'})</h2>
+                    <h2 className="text-2xl font-bold mb-4 text-white">Stats Dashboard ({statsRange === 'daily' ? 'Günlük' : statsRange === 'weekly' ? 'Haftalık' : 'Aylık'})</h2>
                     <div className="flex flex-wrap gap-2 mb-4">
                       <button onClick={() => setStatsRange('daily')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'daily' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Günlük</button>
                       <button onClick={() => setStatsRange('weekly')} className={`px-4 py-2 rounded-xl font-bold ${statsRange === 'weekly' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-700'}`}>Haftalık</button>
@@ -1776,21 +1776,21 @@ export default function App() {
                       <button onClick={exportStatsCsv} className="px-4 py-2 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white">CSV Export</button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-                      <label className="text-xs font-bold text-stone-500">Tarih Başlangıç
-                        <input type="date" value={statsDateRange.from} onChange={(e) => setStatsDateRange((p) => ({ ...p, from: e.target.value }))} className="mt-1 w-full bg-surface-50 border border-surface-200 rounded-lg px-3 py-2 text-sm" />
+                      <label className="text-xs font-bold text-slate-400">Tarih Başlangıç
+                        <input type="date" value={statsDateRange.from} onChange={(e) => setStatsDateRange((p) => ({ ...p, from: e.target.value }))} className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
                       </label>
-                      <label className="text-xs font-bold text-stone-500">Tarih Bitiş
-                        <input type="date" value={statsDateRange.to} onChange={(e) => setStatsDateRange((p) => ({ ...p, to: e.target.value }))} className="mt-1 w-full bg-surface-50 border border-surface-200 rounded-lg px-3 py-2 text-sm" />
+                      <label className="text-xs font-bold text-slate-400">Tarih Bitiş
+                        <input type="date" value={statsDateRange.to} onChange={(e) => setStatsDateRange((p) => ({ ...p, to: e.target.value }))} className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm" />
                       </label>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-                       <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200"><p className="text-sm text-stone-500 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-surface-900">{adminStats.totalMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200"><p className="text-sm text-stone-500 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-surface-900">{adminStats.memberMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200"><p className="text-sm text-stone-500 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-surface-900">{adminStats.adminRepliesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200"><p className="text-sm text-stone-500 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-surface-900">{adminStats.respondedThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200"><p className="text-sm text-stone-500 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-surface-900">{adminStats.newMembersToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)}%</p></div>
-                       <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200"><p className="text-sm text-stone-500 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-surface-900">{adminStats.activeThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)}%</p></div>
-                       <div className={`p-4 rounded-2xl border md:col-span-2 xl:col-span-1 ${adminStats.avgResponseMinToday > 7 ? 'bg-rose-50 border-rose-200' : 'bg-surface-100 border-surface-200'}`}><p className="text-sm text-stone-500 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-surface-900">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p><p className={`text-xs font-bold ${pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday) <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700"><p className="text-sm text-slate-400 font-semibold mb-1">Toplam Mesaj</p><p className="text-3xl font-black text-white">{adminStats.totalMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.totalMessagesToday, previousAdminStats.totalMessagesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700"><p className="text-sm text-slate-400 font-semibold mb-1">Üye Mesajı</p><p className="text-3xl font-black text-white">{adminStats.memberMessagesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.memberMessagesToday, previousAdminStats.memberMessagesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700"><p className="text-sm text-slate-400 font-semibold mb-1">Admin Cevabı</p><p className="text-3xl font-black text-white">{adminStats.adminRepliesToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.adminRepliesToday, previousAdminStats.adminRepliesToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700"><p className="text-sm text-slate-400 font-semibold mb-1">Cevaplanan Thread</p><p className="text-3xl font-black text-white">{adminStats.respondedThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.respondedThreadsToday, previousAdminStats.respondedThreadsToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700"><p className="text-sm text-slate-400 font-semibold mb-1">Yeni Üye Kaydı</p><p className="text-3xl font-black text-white">{adminStats.newMembersToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.newMembersToday, previousAdminStats.newMembersToday).toFixed(1)}%</p></div>
+                       <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700"><p className="text-sm text-slate-400 font-semibold mb-1">Aktif Thread</p><p className="text-3xl font-black text-white">{adminStats.activeThreadsToday}</p><p className={`text-xs font-bold ${pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday) >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.activeThreadsToday, previousAdminStats.activeThreadsToday).toFixed(1)}%</p></div>
+                       <div className={`p-4 rounded-2xl border md:col-span-2 xl:col-span-1 ${adminStats.avgResponseMinToday > 7 ? 'bg-rose-50 border-rose-200' : 'bg-slate-800 border-slate-700'}`}><p className="text-sm text-slate-400 font-semibold mb-1">Ort. Cevap Süresi</p><p className="text-3xl font-black text-white">{adminStats.avgResponseMinToday.toFixed(1)} <span className="text-sm">dk</span></p><p className={`text-xs font-bold ${pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday) <= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{pctChange(adminStats.avgResponseMinToday, previousAdminStats.avgResponseMinToday).toFixed(1)}%</p></div>
                     </div>
                     {!!statsAlerts.length && (
                       <div className="mb-4 p-4 rounded-2xl border border-rose-200 bg-rose-50">
@@ -1801,32 +1801,32 @@ export default function App() {
                       </div>
                     )}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200">
-                        <h3 className="text-xl font-bold text-surface-800 mb-2">Engagement (7 Gün)</h3>
-                        <p className="text-sm font-semibold text-stone-600 mb-2">Yoğun saatler:</p>
+                      <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700">
+                        <h3 className="text-xl font-bold text-slate-200 mb-2">Engagement (7 Gün)</h3>
+                        <p className="text-sm font-semibold text-slate-300 mb-2">Yoğun saatler:</p>
                         <div className="flex flex-wrap gap-2">
                           {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
                             <span key={item.label} className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">{item.label} ({item.count})</span>
-                          )) : <span className="text-sm text-stone-400">Veri yok</span>}
+                          )) : <span className="text-sm text-slate-500">Veri yok</span>}
                         </div>
                         <div className="mt-3 flex items-end gap-1 h-16">
                           {engagementInsights.topHours.length ? engagementInsights.topHours.map((item) => (
                             <div key={`chart-${item.label}`} className="flex-1 flex flex-col items-center justify-end gap-1">
                               <div className="w-full rounded-t bg-indigo-400/80" style={{ height: `${Math.max(10, item.count * 8)}px` }} />
-                              <span className="text-[10px] text-stone-500">{item.label.slice(0, 2)}</span>
+                              <span className="text-[10px] text-slate-400">{item.label.slice(0, 2)}</span>
                             </div>
-                          )) : <span className="text-xs text-stone-400">Mini chart için veri yok.</span>}
+                          )) : <span className="text-xs text-slate-500">Mini chart için veri yok.</span>}
                         </div>
                       </div>
-                      <div className="p-4 bg-surface-100 rounded-2xl border border-surface-200">
-                        <h3 className="text-xl font-bold text-surface-800 mb-2">İlgi gören profiller:</h3>
+                      <div className="p-4 bg-slate-800 rounded-2xl border border-slate-700">
+                        <h3 className="text-xl font-bold text-slate-200 mb-2">İlgi gören profiller:</h3>
                         <div className="space-y-2">
                           {engagementInsights.topProfiles.length ? engagementInsights.topProfiles.map((item) => (
-                            <div key={item.name} className="flex items-center justify-between rounded-xl bg-surface-50 border border-surface-200 px-3 py-2 text-sm">
+                            <div key={item.name} className="flex items-center justify-between rounded-xl bg-slate-900 border border-slate-700 px-3 py-2 text-sm">
                               <span className="font-semibold text-slate-700">{item.name}</span>
-                              <span className="font-black text-indigo-700">{item.count} <span className="text-[10px] text-stone-400">▁▃▆█</span></span>
+                              <span className="font-black text-indigo-700">{item.count} <span className="text-[10px] text-slate-500">▁▃▆█</span></span>
                             </div>
-                          )) : <span className="text-sm text-stone-400">Veri yok</span>}
+                          )) : <span className="text-sm text-slate-500">Veri yok</span>}
                         </div>
                       </div>
                     </div>
@@ -1845,8 +1845,8 @@ export default function App() {
                  <div className="p-6 md:p-8 overflow-y-auto space-y-8">
                     
                     {/* General Settings */}
-                    <div className="bg-surface-100 border border-surface-200 rounded-2xl p-6">
-                      <h3 className="text-lg font-bold text-surface-900 mb-4">Genel Ayarlar</h3>
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
+                      <h3 className="text-lg font-bold text-white mb-4">Genel Ayarlar</h3>
                       <label className="flex items-center justify-between cursor-pointer max-w-md">
                         <span className="font-semibold text-slate-700">Bildirim Sesi Aktif</span>
                         <input type="checkbox" checked={notificationSoundEnabled} onChange={(e) => setNotificationSoundEnabled(e.target.checked)} className="w-5 h-5 accent-indigo-600 cursor-pointer" />
@@ -1854,28 +1854,28 @@ export default function App() {
                     </div>
 
                     {/* Create Virtual Profile */}
-                    <div className="bg-surface-100 border border-surface-200 rounded-2xl p-6">
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-surface-900">Sanal Profil Oluştur</h3>
-                        <button onClick={fillRandomVirtualProfile} className="text-xl bg-surface-50 border border-surface-200 rounded-xl px-3 py-1.5 hover:bg-surface-200 transition-colors shadow-sm" title="Rastgele Doldur">🎲 Doldur</button>
+                        <h3 className="text-lg font-bold text-white">Sanal Profil Oluştur</h3>
+                        <button onClick={fillRandomVirtualProfile} className="text-xl bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 hover:bg-slate-800 transition-colors shadow-sm" title="Rastgele Doldur">🎲 Doldur</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <input placeholder="Ad (boşsa otomatik)" value={profileForm.name} onChange={(e) => setProfileForm((s) => ({ ...s, name: e.target.value }))} className="px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
-                        <input placeholder="Yaş (boşsa otomatik)" type="number" value={profileForm.age} onChange={(e) => setProfileForm((s) => ({ ...s, age: e.target.value }))} className="px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
-                        <input placeholder="Şehir (boşsa otomatik)" value={profileForm.city} onChange={(e) => setProfileForm((s) => ({ ...s, city: e.target.value }))} className="px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
-                        <select value={profileForm.gender} onChange={(e) => setProfileForm((s) => ({ ...s, gender: e.target.value }))} className="px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
+                        <input placeholder="Ad (boşsa otomatik)" value={profileForm.name} onChange={(e) => setProfileForm((s) => ({ ...s, name: e.target.value }))} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+                        <input placeholder="Yaş (boşsa otomatik)" type="number" value={profileForm.age} onChange={(e) => setProfileForm((s) => ({ ...s, age: e.target.value }))} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+                        <input placeholder="Şehir (boşsa otomatik)" value={profileForm.city} onChange={(e) => setProfileForm((s) => ({ ...s, city: e.target.value }))} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+                        <select value={profileForm.gender} onChange={(e) => setProfileForm((s) => ({ ...s, gender: e.target.value }))} className="px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500">
                           <option value="Kadın">Kadın</option>
                           <option value="Erkek">Erkek</option>
                         </select>
-                        <textarea placeholder="Hobiler (virgülle ayırın)" value={profileForm.hobbies} onChange={(e) => setProfileForm((s) => ({ ...s, hobbies: e.target.value }))} className="md:col-span-2 px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]" />
+                        <textarea placeholder="Hobiler (virgülle ayırın)" value={profileForm.hobbies} onChange={(e) => setProfileForm((s) => ({ ...s, hobbies: e.target.value }))} className="md:col-span-2 px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500 min-h-[80px]" />
                       </div>
                       
                       <div className="flex items-center gap-4 mb-6">
-                         <label className="bg-surface-50 border border-surface-200 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 cursor-pointer hover:bg-surface-200 transition-colors shadow-sm">
+                         <label className="bg-slate-900 border border-slate-700 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-700 cursor-pointer hover:bg-slate-800 transition-colors shadow-sm">
                            📸 Fotoğraf Yükle
                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; const url = await uploadImage(file, 'virtual-profiles'); if (url) setProfileForm((s) => ({ ...s, photo_url: url })); }} />
                          </label>
-                         {profileForm.photo_url && <img loading="lazy" src={profileForm.photo_url} alt="Önizleme" className="w-16 h-16 object-cover rounded-xl border border-surface-200 shadow-sm" />}
+                         {profileForm.photo_url && <img loading="lazy" src={profileForm.photo_url} alt="Önizleme" className="w-16 h-16 object-cover rounded-xl border border-slate-700 shadow-sm" />}
                       </div>
 
                       <button onClick={createVirtualProfile} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-colors">
@@ -1884,23 +1884,23 @@ export default function App() {
                     </div>
 
                     {/* Member List */}
-                    <div className="bg-surface-100 border border-surface-200 rounded-2xl p-6">
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-bold text-surface-900">Kayıtlı Kullanıcılar</h3>
-                        <button onClick={fetchRegisteredMembers} className="text-sm bg-surface-50 border border-surface-200 px-3 py-1.5 rounded-lg shadow-sm hover:bg-surface-200 font-bold">Yenile</button>
+                        <h3 className="text-lg font-bold text-white">Kayıtlı Kullanıcılar</h3>
+                        <button onClick={fetchRegisteredMembers} className="text-sm bg-slate-900 border border-slate-700 px-3 py-1.5 rounded-lg shadow-sm hover:bg-slate-800 font-bold">Yenile</button>
                       </div>
                       {loadingMembers ? (
-                        <p className="text-stone-500 font-medium">Kullanıcılar yükleniyor...</p>
+                        <p className="text-slate-400 font-medium">Kullanıcılar yükleniyor...</p>
                       ) : (
                         <div className="space-y-3">
                           {registeredMembers.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between bg-surface-50 border border-surface-200 rounded-xl p-4 shadow-sm">
+                            <div key={member.id} className="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-xl p-4 shadow-sm">
                               <div className="min-w-0 pr-4">
-                                <p className="font-bold text-surface-900 truncate" title={member.username}>{member.username}</p>
-                                <p className="text-xs font-semibold text-stone-400 mt-1">Kayıt: {new Date(member.created_at).toLocaleString('tr-TR')}</p>
+                                <p className="font-bold text-white truncate" title={member.username}>{member.username}</p>
+                                <p className="text-xs font-semibold text-slate-500 mt-1">Kayıt: {new Date(member.created_at).toLocaleString('tr-TR')}</p>
                                 <div className="flex flex-wrap items-center gap-2 mt-2 text-xs font-bold">
                                   <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">Jeton: {member.coin_balance ?? 100}</span>
-                                  <span className="bg-surface-200 text-stone-600 px-2 py-0.5 rounded-md">İletişim: {member.contact_phone || '-'}</span>
+                                  <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md">İletişim: {member.contact_phone || '-'}</span>
                                 </div>
                               </div>
                               <button onClick={() => { if(window.confirm('Bu kullanıcıyı tamamen silmek istediğine emin misin?')) deleteMember(member.id); }} className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-sm rounded-xl transition-colors">
@@ -1908,7 +1908,7 @@ export default function App() {
                               </button>
                             </div>
                           ))}
-                          {!registeredMembers.length && <p className="text-stone-500 font-medium bg-surface-50 p-4 rounded-xl border border-surface-200">Henüz kayıtlı kullanıcı bulunmuyor.</p>}
+                          {!registeredMembers.length && <p className="text-slate-400 font-medium bg-slate-900 p-4 rounded-xl border border-slate-700">Henüz kayıtlı kullanıcı bulunmuyor.</p>}
                         </div>
                       )}
                     </div>
@@ -1919,28 +1919,28 @@ export default function App() {
                {/* Admin Center - Payments Tab (MISSING CODE RESTORED HERE) */}
                {adminTab === 'payments' && (
                  <div className="p-6 md:p-8 overflow-y-auto">
-                    <div className="bg-surface-100 border border-surface-200 rounded-2xl p-6 max-w-2xl">
-                      <h3 className="text-lg font-bold text-surface-900 mb-2">Ödeme API Entegrasyonu</h3>
-                      <p className="text-sm text-stone-600 font-medium mb-6">Coin satın alma akışı belirtilen Checkout Session endpointine otomatik gider. Sistem doğrudan bu altyapıyı kullanır.</p>
+                    <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-2xl">
+                      <h3 className="text-lg font-bold text-white mb-2">Ödeme API Entegrasyonu</h3>
+                      <p className="text-sm text-slate-300 font-medium mb-6">Coin satın alma akışı belirtilen Checkout Session endpointine otomatik gider. Sistem doğrudan bu altyapıyı kullanır.</p>
                       
                       <div className="space-y-5">
                         <div>
-                          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Provider (örn: stripe, paytr)</label>
-                          <input placeholder="Provider girin" value={paymentSettings.provider} onChange={(e) => setPaymentSettings((prev) => ({ ...prev, provider: e.target.value }))} className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Provider (örn: stripe, paytr)</label>
+                          <input placeholder="Provider girin" value={paymentSettings.provider} onChange={(e) => setPaymentSettings((prev) => ({ ...prev, provider: e.target.value }))} className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500" />
                         </div>
                         
                         <div>
-                          <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">Checkout Endpoint URL</label>
+                          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Checkout Endpoint URL</label>
                           <input
                             value={paymentSettings.webhook_url}
                             onChange={(e) => setPaymentSettings((prev) => ({ ...prev, webhook_url: e.target.value }))}
                             placeholder={DEFAULT_CHECKOUT_ENDPOINT}
-                            className="w-full px-4 py-3 bg-surface-50 border border-surface-200 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
+                            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm focus:outline-none focus:border-indigo-500"
                           />
-                          <p className="text-xs text-stone-500 font-medium mt-2">Webhook callback adresi: <code className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">/api/webhook</code></p>
+                          <p className="text-xs text-slate-400 font-medium mt-2">Webhook callback adresi: <code className="bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">/api/webhook</code></p>
                         </div>
 
-                        <label className="flex items-center justify-between p-4 bg-surface-50 border border-surface-200 rounded-xl cursor-pointer shadow-sm mt-4 hover:border-emerald-300 transition-colors">
+                        <label className="flex items-center justify-between p-4 bg-slate-900 border border-slate-700 rounded-xl cursor-pointer shadow-sm mt-4 hover:border-emerald-300 transition-colors">
                           <span className="font-bold text-slate-700">Entegrasyon Aktif</span>
                           <input type="checkbox" checked={paymentSettings.is_active} onChange={(e) => setPaymentSettings((prev) => ({ ...prev, is_active: e.target.checked }))} className="w-5 h-5 accent-emerald-500 cursor-pointer" />
                         </label>
@@ -1957,44 +1957,44 @@ export default function App() {
             {/* Admin Right Sidebar */}
             {adminDrawerOpen && adminTab === 'chat' && (
               <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
-                 <div className="bg-surface-50 rounded-2xl p-5 border border-surface-200 shadow-sm flex flex-col items-center text-center">
+                 <div className="bg-slate-900 rounded-2xl p-5 border border-slate-700 shadow-sm flex flex-col items-center text-center">
                     <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden mb-3 border-4 border-white shadow-md">
                       {selectedThreadProfile?.photo_url ? <img loading="lazy" src={selectedThreadProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-indigo-100" />}
                     </div>
-                    <h3 className="text-lg font-bold text-surface-900">{selectedThreadProfile?.name || '-'}</h3>
-                    <p className="text-sm text-stone-500 font-medium">{selectedThreadProfile?.age} • {selectedThreadProfile?.city}</p>
+                    <h3 className="text-lg font-bold text-white">{selectedThreadProfile?.name || '-'}</h3>
+                    <p className="text-sm text-slate-400 font-medium">{selectedThreadProfile?.age} • {selectedThreadProfile?.city}</p>
                  </div>
 
-                 <div className="bg-surface-50 rounded-2xl p-5 border border-surface-200 shadow-sm">
-                    <h4 className="text-sm font-bold text-surface-900 mb-3">Sohbet Edilen Kullanıcı</h4>
+                 <div className="bg-slate-900 rounded-2xl p-5 border border-slate-700 shadow-sm">
+                    <h4 className="text-sm font-bold text-white mb-3">Sohbet Edilen Kullanıcı</h4>
                     <div className="flex items-center gap-3">
-                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border border-surface-200 shadow-sm">
-                        {selectedMemberProfile?.photo_url ? <img loading="lazy" src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-stone-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
+                      <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border border-slate-700 shadow-sm">
+                        {selectedMemberProfile?.photo_url ? <img loading="lazy" src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-500 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-bold text-surface-900 truncate">{selectedThread?.member_username || 'Kullanıcı seçilmedi'}</p>
-                        <p className="text-xs text-stone-500">{selectedMemberProfile?.age ? `${selectedMemberProfile.age} yaş` : '-'} • {selectedMemberProfile?.city || 'Şehir yok'}</p>
+                        <p className="font-bold text-white truncate">{selectedThread?.member_username || 'Kullanıcı seçilmedi'}</p>
+                        <p className="text-xs text-slate-400">{selectedMemberProfile?.age ? `${selectedMemberProfile.age} yaş` : '-'} • {selectedMemberProfile?.city || 'Şehir yok'}</p>
                       </div>
                     </div>
-                    <p className="text-xs text-stone-500 mt-3">Hobiler: <span className="font-medium text-slate-700">{selectedMemberProfile?.hobbies || 'Belirtilmemiş'}</span></p>
+                    <p className="text-xs text-slate-400 mt-3">Hobiler: <span className="font-medium text-slate-700">{selectedMemberProfile?.hobbies || 'Belirtilmemiş'}</span></p>
                  </div>
                  
-                 <div className="bg-surface-50 rounded-2xl p-4 border border-surface-200 shadow-sm">
-                    <h4 className="text-sm font-bold text-surface-900 mb-2">Hızlı Notlar (Quick Facts)</h4>
-                    <textarea value={quickFactsText} onChange={(e)=>setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="w-full bg-surface-100 border border-surface-200 rounded-xl p-3 text-sm focus:outline-none min-h-[100px]" />
+                 <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
+                    <h4 className="text-sm font-bold text-white mb-2">Hızlı Notlar (Quick Facts)</h4>
+                    <textarea value={quickFactsText} onChange={(e)=>setQuickFactsText(e.target.value)} placeholder="Kullanıcı sınırları, özel istekleri..." className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm focus:outline-none min-h-[100px]" />
                     <button onClick={saveQuickFacts} className="w-full mt-2 bg-surface-900 text-white text-xs font-bold py-2 rounded-lg">Notları Kaydet</button>
                  </div>
 
-                 <div className="bg-surface-50 rounded-2xl p-4 border border-surface-200 shadow-sm">
-                    <h4 className="text-sm font-bold text-surface-900 mb-2">İşlem Geçmişi (Timeline)</h4>
+                 <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
+                    <h4 className="text-sm font-bold text-white mb-2">İşlem Geçmişi (Timeline)</h4>
                     <div className="space-y-2 max-h-52 overflow-y-auto">
                       {threadTimeline.length ? threadTimeline.map((event, idx) => (
-                        <div key={`${event.event_type}-${event.created_at}-${idx}`} className="text-xs rounded-lg border border-surface-200 bg-surface-100 p-2">
+                        <div key={`${event.event_type}-${event.created_at}-${idx}`} className="text-xs rounded-lg border border-slate-700 bg-slate-800 p-2">
                           <p className="font-bold text-slate-700">{event.event_type}</p>
-                          <p className="text-stone-500 mt-0.5">{formatTime(event.created_at)}</p>
-                          {!!event.meta && <p className="text-stone-600 mt-1 break-words">{JSON.stringify(event.meta)}</p>}
+                          <p className="text-slate-400 mt-0.5">{formatTime(event.created_at)}</p>
+                          {!!event.meta && <p className="text-slate-300 mt-1 break-words">{JSON.stringify(event.meta)}</p>}
                         </div>
-                      )) : <p className="text-xs text-stone-400">Henüz kayıtlı olay yok.</p>}
+                      )) : <p className="text-xs text-slate-500">Henüz kayıtlı olay yok.</p>}
                     </div>
                  </div>
               </aside>
@@ -2009,18 +2009,18 @@ export default function App() {
             <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
             <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
 
-            <div className="relative overflow-hidden rounded-[2rem] p-4 md:p-6 border border-surface-200 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
+            <div className="relative overflow-hidden rounded-[2rem] p-4 md:p-6 border border-slate-700 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
               <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
-              <h2 className="relative text-3xl font-black text-surface-900 tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
-              <p className="relative text-stone-500 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
+              <h2 className="relative text-3xl font-black text-white tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
+              <p className="relative text-slate-400 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
               <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
                   <p className="text-lg font-black text-amber-900">{memberProfile.coin_balance ?? 0} jeton</p>
                 </div>
-                <div className="rounded-2xl border border-surface-200 bg-surface-100 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-stone-500">Mesaj Maliyeti</p>
-                  <p className="text-lg font-black text-surface-900">{COIN_COST_PER_MESSAGE} jeton</p>
+                <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Mesaj Maliyeti</p>
+                  <p className="text-lg font-black text-white">{COIN_COST_PER_MESSAGE} jeton</p>
                 </div>
                 <button onClick={() => setUserView('coins')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left hover:bg-emerald-100 transition-colors">
                   <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Hızlı İşlem</p>
@@ -2029,40 +2029,40 @@ export default function App() {
               </div>
 
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="rounded-2xl bg-surface-50/70 border border-surface-200/70 px-4 py-3 backdrop-blur-md">
-                  <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Aktif Profil</p>
-                  <p className="text-xl font-black text-surface-900">{activeProfileCount}</p>
+                <div className="rounded-2xl bg-slate-900/70 border border-slate-700/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Aktif Profil</p>
+                  <p className="text-xl font-black text-white">{activeProfileCount}</p>
                 </div>
-                <div className="rounded-2xl bg-surface-50/70 border border-surface-200/70 px-4 py-3 backdrop-blur-md">
-                  <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Okunmamış Mesaj</p>
+                <div className="rounded-2xl bg-slate-900/70 border border-slate-700/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Okunmamış Mesaj</p>
                   <p className="text-xl font-black text-rose-600">{totalUnreadCount}</p>
                 </div>
-                <div className="rounded-2xl bg-surface-50/70 border border-surface-200/70 px-4 py-3 backdrop-blur-md">
-                  <p className="text-[11px] font-bold text-stone-500 uppercase tracking-wide">Uyum Skoru (Örnek)</p>
+                <div className="rounded-2xl bg-slate-900/70 border border-slate-700/70 px-4 py-3 backdrop-blur-md">
+                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Uyum Skoru (Örnek)</p>
                   <p className="text-xl font-black text-indigo-700">%{interestScore}</p>
                 </div>
               </div>
               
-              <div className="mt-5 flex flex-col md:flex-row items-center gap-3 bg-surface-100 p-2 rounded-2xl border border-surface-100">
-                <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-surface-50 border border-surface-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
-                <select value={genderFilter} onChange={(e)=>setGenderFilter(e.target.value)} className="w-full md:w-40 bg-surface-50 border border-surface-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400">
+              <div className="mt-5 flex flex-col md:flex-row items-center gap-3 bg-slate-800 p-2 rounded-2xl border border-slate-800">
+                <input value={profileSearch} onChange={(e)=>setProfileSearch(e.target.value)} placeholder="🔍 İsim veya hobi ara..." className="w-full md:w-auto flex-1 bg-slate-900 border border-slate-700 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
+                <select value={genderFilter} onChange={(e)=>setGenderFilter(e.target.value)} className="w-full md:w-40 bg-slate-900 border border-slate-700 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400">
                   <option value="all">Tüm Cinsiyetler</option>
                   <option value="Kadın">Kadın</option>
                   <option value="Erkek">Erkek</option>
                 </select>
-                <input value={cityFilter} onChange={(e)=>setCityFilter(e.target.value)} placeholder="📍 Şehir..." className="w-full md:w-48 bg-surface-50 border border-surface-200 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
+                <input value={cityFilter} onChange={(e)=>setCityFilter(e.target.value)} placeholder="📍 Şehir..." className="w-full md:w-48 bg-slate-900 border border-slate-700 px-4 py-3 rounded-xl text-sm font-medium outline-none focus:border-fuchsia-400" />
               </div>
             </div>
 
             {!!spotlightProfiles.length && (
-              <div className="bg-surface-50 rounded-[2rem] border border-surface-200 shadow-sm p-5 md:p-6">
+              <div className="bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-black text-surface-900">Bugünün Öne Çıkanları</h3>
+                  <h3 className="text-xl font-black text-white">Bugünün Öne Çıkanları</h3>
                   <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700">Editor's pick</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {spotlightProfiles.slice(0, 3).map((profile) => (
-                    <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-40 text-left border border-surface-200 shadow-sm">
+                    <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-40 text-left border border-slate-700 shadow-sm">
                       {profile.photo_url ? (
                         <img loading="lazy" src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       ) : (
@@ -2081,8 +2081,8 @@ export default function App() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {discoverProfiles.map(profile => (
-                <div key={profile.id} className="group bg-surface-50/95 backdrop-blur-sm rounded-3xl border border-surface-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
-                  <div className="relative h-72 overflow-hidden bg-surface-200">
+                <div key={profile.id} className="group bg-slate-900/95 backdrop-blur-sm rounded-3xl border border-slate-700 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
+                  <div className="relative h-72 overflow-hidden bg-slate-800">
                     {profile.photo_url ? (
                       <img loading="lazy" src={profile.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : (
@@ -2099,11 +2099,11 @@ export default function App() {
                   </div>
                   <div className="p-4 flex flex-col flex-1">
                     <div className="flex flex-wrap gap-1.5 mb-4">
-                      {profile.hobbies.split(',').slice(0,3).map(h => h.trim() && <span key={h} className="text-[10px] font-bold px-2 py-1 bg-surface-200 text-stone-600 rounded-md">{h}</span>)}
+                      {profile.hobbies.split(',').slice(0,3).map(h => h.trim() && <span key={h} className="text-[10px] font-bold px-2 py-1 bg-slate-800 text-slate-300 rounded-md">{h}</span>)}
                     </div>
                     <div className="mt-auto grid grid-cols-3 gap-2">
-                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-surface-100 text-stone-600 hover:bg-surface-200'}`}>❤️ -{COIN_COST_PER_MESSAGE}</button>
-                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-surface-100 text-stone-600 hover:bg-surface-200'}`}>👋 -{COIN_COST_PER_MESSAGE}</button>
+                       <button onClick={() => { setHeartedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'heart'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${heartedProfiles[profile.id] ? 'bg-rose-100 text-rose-600' : 'bg-slate-800 text-slate-300 hover:bg-slate-800'}`}>❤️ -{COIN_COST_PER_MESSAGE}</button>
+                       <button onClick={() => { setWavedProfiles(s => ({...s, [profile.id]: true})); sendReaction(profile.id, 'wave'); }} className={`py-2.5 rounded-xl text-[11px] font-bold transition-colors ${wavedProfiles[profile.id] ? 'bg-cyan-100 text-cyan-600' : 'bg-slate-800 text-slate-300 hover:bg-slate-800'}`}>👋 -{COIN_COST_PER_MESSAGE}</button>
                        <button onClick={() => openChatWithProfile(profile.id)} className="py-2.5 rounded-xl text-sm font-bold bg-surface-900 hover:bg-slate-800 text-white shadow-md">Mesaj</button>
                     </div>
                   </div>
@@ -2115,11 +2115,11 @@ export default function App() {
 
         /* ======================= USER SCREEN: CHAT ======================= */
         : userView === 'chat' ? (
-          <div className="flex-1 flex flex-col md:flex-row gap-6 bg-surface-50 rounded-[2rem] border border-surface-200 shadow-sm overflow-hidden h-[calc(100vh-140px)]">
+          <div className="flex-1 flex flex-col md:flex-row gap-6 bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm overflow-hidden h-[calc(100vh-140px)]">
              {/* Contact List */}
-             <div className="w-full md:w-80 border-r border-surface-100 flex flex-col bg-surface-100/50">
-               <div className="p-5 border-b border-surface-100">
-                 <h3 className="text-xl font-black text-surface-900">Mesajlarım</h3>
+             <div className="w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-800/50">
+               <div className="p-5 border-b border-slate-800">
+                 <h3 className="text-xl font-black text-white">Mesajlarım</h3>
                </div>
                <div
                  className="overflow-y-auto p-3 space-y-2"
@@ -2128,16 +2128,16 @@ export default function App() {
                  style={{ maxHeight: `${USER_CHAT_VISIBLE_PROFILE_COUNT * 74}px` }}
                >
                  {renderedUserProfiles.map(p => (
-                   <button key={p.id} onClick={() => setSelectedProfileId(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-surface-50 shadow-sm border border-surface-200' : 'hover:bg-surface-200 border border-transparent'}`}>
+                   <button key={p.id} onClick={() => setSelectedProfileId(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-slate-900 shadow-sm border border-slate-700' : 'hover:bg-slate-800 border border-transparent'}`}>
                      <div className="relative">
                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200">
-                         {p.photo_url ? <img loading="lazy" src={p.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-stone-400">{p.name.slice(0,1)}</div>}
+                         {p.photo_url ? <img loading="lazy" src={p.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-slate-500">{p.name.slice(0,1)}</div>}
                        </div>
                        {effectiveOnlineProfiles[p.id] && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />}
                      </div>
                      <div className="flex-1 text-left min-w-0">
-                       <p className="font-bold text-surface-900 truncate">{p.name}</p>
-                       <p className="text-xs text-stone-500 truncate">{p.city}</p>
+                       <p className="font-bold text-white truncate">{p.name}</p>
+                       <p className="text-xs text-slate-400 truncate">{p.city}</p>
                      </div>
                      {unreadByProfile[p.id] > 0 && <span className="w-5 h-5 bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center rounded-full">{unreadByProfile[p.id]}</span>}
                    </button>
@@ -2146,39 +2146,39 @@ export default function App() {
              </div>
 
              {/* Active Chat */}
-             <div className="flex-1 flex flex-col bg-surface-50 relative">
+             <div className="flex-1 flex flex-col bg-slate-900 relative">
                 {!selectedProfile ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-stone-400">
+                  <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
                     <span className="text-4xl mb-4">💬</span>
                     <p className="font-medium">Sohbet etmek için bir profil seçin.</p>
                   </div>
                 ) : (
                   <>
-                    <div className="px-6 py-4 border-b border-surface-100 flex items-center gap-4 bg-surface-50 z-10 shadow-sm">
+                    <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-4 bg-slate-900 z-10 shadow-sm">
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
                          {selectedProfile.photo_url && <img loading="lazy" src={selectedProfile.photo_url} className="w-full h-full object-cover" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-surface-900 leading-tight">{selectedProfile.name}</h3>
+                        <h3 className="font-bold text-white leading-tight">{selectedProfile.name}</h3>
                         <p className="text-xs font-semibold text-emerald-500">{effectiveOnlineProfiles[selectedProfile.id] ? 'Çevrimiçi' : 'Çevrimdışı'}</p>
                         <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
-                          <div className="px-2 py-1 rounded-lg border border-surface-200 bg-surface-100">
-                            <p className="font-bold text-stone-500 uppercase tracking-wide">Şehir</p>
+                          <div className="px-2 py-1 rounded-lg border border-slate-700 bg-slate-800">
+                            <p className="font-bold text-slate-400 uppercase tracking-wide">Şehir</p>
                             <p className="font-semibold text-slate-700 truncate">{selectedProfile.city || 'Belirtilmemiş'}</p>
                           </div>
-                          <div className="px-2 py-1 rounded-lg border border-surface-200 bg-surface-100">
-                            <p className="font-bold text-stone-500 uppercase tracking-wide">Yaş</p>
+                          <div className="px-2 py-1 rounded-lg border border-slate-700 bg-slate-800">
+                            <p className="font-bold text-slate-400 uppercase tracking-wide">Yaş</p>
                             <p className="font-semibold text-slate-700">{selectedProfile.age || '-'}</p>
                           </div>
-                          <div className="px-2 py-1 rounded-lg border border-surface-200 bg-surface-100">
-                            <p className="font-bold text-stone-500 uppercase tracking-wide">Hobiler</p>
+                          <div className="px-2 py-1 rounded-lg border border-slate-700 bg-slate-800">
+                            <p className="font-bold text-slate-400 uppercase tracking-wide">Hobiler</p>
                             <p className="font-semibold text-slate-700 truncate">{selectedProfile.hobbies || 'Belirtilmemiş'}</p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-fuchsia-50/70 via-white to-slate-50 border-y border-brand-100 shadow-inner" ref={chatBoxRef}>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-fuchsia-50/70 via-white to-slate-50 border-y border-slate-700 shadow-inner" ref={chatBoxRef}>
                       {messages.map(msg => {
                         const isFocusedMemberMessage = msg.sender_role === 'member' && msg.id === focusedMessageId;
                         return (
@@ -2187,21 +2187,21 @@ export default function App() {
                           ref={isFocusedMemberMessage ? latestMemberMessageRef : null}
                           className={`flex flex-col max-w-[75%] scroll-mt-28 ${msg.sender_role === 'member' ? 'items-end ml-auto' : 'items-start mr-auto'}`}
                         >
-                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 ${msg.sender_role === 'member' ? 'bg-brand-500 text-white msg-tail-member' : 'bg-surface-50 border border-surface-200 text-surface-800 msg-tail-virtual'} ${isFocusedMemberMessage ? 'ring-4 ring-fuchsia-300/70 shadow-xl scale-[1.02]' : ''}`}>
+                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 ${msg.sender_role === 'member' ? 'bg-brand-500 text-white msg-tail-member' : 'bg-slate-900 border border-slate-700 text-slate-200 msg-tail-virtual'} ${isFocusedMemberMessage ? 'ring-4 ring-fuchsia-300/70 shadow-xl scale-[1.02]' : ''}`}>
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                           </div>
                           <div className="flex items-center gap-1 mt-1 px-1">
-                            <span className="text-[10px] text-stone-400 font-medium">{formatTime(msg.created_at)}</span>
+                            <span className="text-[10px] text-slate-500 font-medium">{formatTime(msg.created_at)}</span>
                             {msg.sender_role === 'member' && <span className={`text-[10px] font-bold ${msg.seen_by_admin ? 'text-blue-500' : 'text-slate-300'}`}>✓✓</span>}
                           </div>
                         </div>
                       );})}
-                      {typingLabel && <div className="text-xs font-bold text-stone-400 ml-2 animate-pulse">{typingLabel}</div>}
+                      {typingLabel && <div className="text-xs font-bold text-slate-500 ml-2 animate-pulse">{typingLabel}</div>}
                     </div>
 
-                    <div className="p-4 bg-surface-50 border-t border-brand-100 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
+                    <div className="p-4 bg-slate-900 border-t border-slate-700 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
                       <div className="flex items-center justify-between mb-2 px-1">
-                        <p className="text-xs font-bold text-stone-500">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
+                        <p className="text-xs font-bold text-slate-400">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
                         <p className="hidden sm:block text-[11px] font-black uppercase tracking-wide text-fuchsia-500">Enter ile gönder · Shift+Enter yeni satır</p>
                         {coinSpendFeedback && <span className="text-xs font-black text-rose-600">{coinSpendFeedback}</span>}
                       </div>
@@ -2212,7 +2212,7 @@ export default function App() {
                           onChange={(e) => { setNewMessage(e.target.value); autoResizeTextarea(e.target, 120); }}
                           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                           placeholder="Mesajınızı yazın..."
-                          className="flex-1 bg-transparent px-3 py-2 text-base font-semibold text-surface-800 placeholder:text-stone-400 focus:outline-none resize-none min-h-[48px] max-h-[120px]"
+                          className="flex-1 bg-transparent px-3 py-2 text-base font-semibold text-slate-200 placeholder:text-slate-500 focus:outline-none resize-none min-h-[48px] max-h-[120px]"
                         />
                         <button onClick={sendMessage} className="w-12 h-12 flex items-center justify-center bg-brand-500 hover:bg-brand-600 text-white rounded-2xl shadow-md shadow-fuchsia-500/30 transition-transform active:scale-95">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
@@ -2228,22 +2228,22 @@ export default function App() {
         /* ======================= USER SCREEN: PROFILE & COINS ======================= */
         : (
           <div className="max-w-2xl mx-auto w-full space-y-6">
-            <div className="bg-surface-50 rounded-[2rem] p-8 border border-surface-200 shadow-sm">
-               <h2 className="text-2xl font-black text-surface-900 mb-6">{userView === 'profile' ? 'Profil Ayarları' : 'Jeton Cüzdanı'}</h2>
+            <div className="bg-slate-900 rounded-[2rem] p-8 border border-slate-700 shadow-sm">
+               <h2 className="text-2xl font-black text-white mb-6">{userView === 'profile' ? 'Profil Ayarları' : 'Jeton Cüzdanı'}</h2>
                {userView === 'profile' ? (
                  <div className="space-y-4">
                    <div className="flex items-center gap-6 mb-6">
-                     <div className="w-24 h-24 rounded-full bg-surface-200 border border-surface-200 overflow-hidden">
+                     <div className="w-24 h-24 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
                        {memberProfile.photo_url && <img loading="lazy" src={memberProfile.photo_url} className="w-full h-full object-cover" />}
                      </div>
-                     <label className="px-4 py-2 bg-surface-200 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl cursor-pointer transition-colors">
+                     <label className="px-4 py-2 bg-slate-800 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl cursor-pointer transition-colors">
                        Fotoğraf Değiştir
                        <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if(f){ const url = await uploadImage(f, 'members'); if(url) setMemberProfile(s=>({...s, photo_url:url})); } }} />
                      </label>
                    </div>
-                   <input value={memberProfile.age} onChange={e=>setMemberProfile(s=>({...s, age:e.target.value}))} placeholder="Yaşınız" type="number" className="w-full px-4 py-3 bg-surface-100 border border-surface-200 rounded-xl text-sm outline-none focus:border-fuchsia-400" />
-                   <input value={memberProfile.city} onChange={e=>setMemberProfile(s=>({...s, city:e.target.value}))} placeholder="Yaşadığınız Şehir" className="w-full px-4 py-3 bg-surface-100 border border-surface-200 rounded-xl text-sm outline-none focus:border-fuchsia-400" />
-                   <textarea value={memberProfile.hobbies} onChange={e=>setMemberProfile(s=>({...s, hobbies:e.target.value}))} placeholder="Hobileriniz (virgülle ayırın)" className="w-full px-4 py-3 bg-surface-100 border border-surface-200 rounded-xl text-sm outline-none focus:border-fuchsia-400 min-h-[100px]" />
+                   <input value={memberProfile.age} onChange={e=>setMemberProfile(s=>({...s, age:e.target.value}))} placeholder="Yaşınız" type="number" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm outline-none focus:border-fuchsia-400" />
+                   <input value={memberProfile.city} onChange={e=>setMemberProfile(s=>({...s, city:e.target.value}))} placeholder="Yaşadığınız Şehir" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm outline-none focus:border-fuchsia-400" />
+                   <textarea value={memberProfile.hobbies} onChange={e=>setMemberProfile(s=>({...s, hobbies:e.target.value}))} placeholder="Hobileriniz (virgülle ayırın)" className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-sm outline-none focus:border-fuchsia-400 min-h-[100px]" />
                    <button onClick={saveOwnProfile} className="w-full py-4 bg-surface-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md mt-4">Değişiklikleri Kaydet</button>
                  </div>
                ) : (
@@ -2261,13 +2261,13 @@ export default function App() {
                        { amount: 1200, label: 'Popüler Paket', bonus: '+120 bonus', price: '₺199', popular: true },
                        { amount: 2500, label: 'Power Paket', bonus: '+400 bonus', price: '₺349' },
                      ].map((pkg) => (
-                       <button key={pkg.amount} onClick={() => requestCoinCheckout(pkg.amount)} disabled={coinCheckoutLoading} className={`relative py-4 bg-surface-50 border rounded-2xl font-bold text-surface-800 flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-50 ${pkg.popular ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-surface-200 hover:border-emerald-300'}`}>
+                       <button key={pkg.amount} onClick={() => requestCoinCheckout(pkg.amount)} disabled={coinCheckoutLoading} className={`relative py-4 bg-slate-900 border rounded-2xl font-bold text-slate-200 flex flex-col items-center justify-center gap-1 shadow-sm transition-all active:scale-95 disabled:opacity-50 ${pkg.popular ? 'border-emerald-400 ring-2 ring-emerald-200' : 'border-slate-700 hover:border-emerald-300'}`}>
                          {pkg.popular && <span className="absolute -top-2.5 px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[10px] font-black">En Popüler</span>}
                          <span className="text-emerald-500 text-xl">💎</span>
                          <span>{pkg.amount} Jeton</span>
-                         <span className="text-xs text-stone-500">{pkg.label}</span>
+                         <span className="text-xs text-slate-400">{pkg.label}</span>
                          <span className="text-xs font-bold text-emerald-700">{pkg.bonus}</span>
-                         <span className="text-sm font-black text-surface-900">{pkg.price}</span>
+                         <span className="text-sm font-black text-white">{pkg.price}</span>
                        </button>
                      ))}
                    </div>
@@ -2289,10 +2289,10 @@ export default function App() {
                    )}
                    
                    {/* TEST PURCHASE BUTTON */}
-                   <div className="mt-8 pt-6 border-t border-surface-100">
-                     <p className="text-xs text-stone-400 font-bold uppercase mb-3">Test Yükleme (Geliştirici Modu)</p>
+                   <div className="mt-8 pt-6 border-t border-slate-800">
+                     <p className="text-xs text-slate-500 font-bold uppercase mb-3">Test Yükleme (Geliştirici Modu)</p>
                      <div className="flex gap-2">
-                       <input value={memberProfile.contact_phone || ''} onChange={(e) => setMemberProfile((prev) => ({ ...prev, contact_phone: e.target.value }))} placeholder={`Telefon (${TEST_CONTACT_NUMBER})`} className="w-full px-4 py-2 bg-surface-100 border border-surface-200 rounded-xl text-sm outline-none focus:border-fuchsia-400" />
+                       <input value={memberProfile.contact_phone || ''} onChange={(e) => setMemberProfile((prev) => ({ ...prev, contact_phone: e.target.value }))} placeholder={`Telefon (${TEST_CONTACT_NUMBER})`} className="w-full px-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm outline-none focus:border-fuchsia-400" />
                        <button onClick={handleCoinPurchaseTest} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl whitespace-nowrap text-sm">5000 Yükle</button>
                      </div>
                    </div>
@@ -2307,13 +2307,13 @@ export default function App() {
       {/* 🚀 OUT OF COINS MODAL */}
       {coinPurchaseModalOpen && !isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-900/60 backdrop-blur-sm">
-          <div className="bg-surface-50 p-8 rounded-[2rem] max-w-sm w-full shadow-2xl border border-surface-100">
+          <div className="bg-slate-900 p-8 rounded-[2rem] max-w-sm w-full shadow-2xl border border-slate-800">
             <div className="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center text-2xl mb-4">😮</div>
-            <h3 className="text-2xl font-black text-surface-900 mb-2">Jetonun Bitti!</h3>
-            <p className="text-sm font-medium text-stone-500 mb-6">Sohbete veya etkileşime devam edebilmek için cüzdanına jeton eklemen gerekiyor.</p>
+            <h3 className="text-2xl font-black text-white mb-2">Jetonun Bitti!</h3>
+            <p className="text-sm font-medium text-slate-400 mb-6">Sohbete veya etkileşime devam edebilmek için cüzdanına jeton eklemen gerekiyor.</p>
             <div className="flex flex-col gap-3">
               <button onClick={() => { setZeroCoinPromptDismissed(false); setCoinPurchaseModalOpen(false); setUserView('coins'); }} className="w-full py-3.5 bg-surface-900 hover:bg-slate-800 text-white font-bold rounded-xl shadow-md">Jeton Satın Al</button>
-              <button onClick={() => { setZeroCoinPromptDismissed(true); setCoinPurchaseModalOpen(false); }} className="w-full py-3.5 bg-surface-100 hover:bg-surface-200 text-stone-600 font-bold rounded-xl border border-surface-200">Kapat</button>
+              <button onClick={() => { setZeroCoinPromptDismissed(true); setCoinPurchaseModalOpen(false); }} className="w-full py-3.5 bg-slate-800 hover:bg-slate-800 text-slate-300 font-bold rounded-xl border border-slate-700">Kapat</button>
             </div>
           </div>
         </div>

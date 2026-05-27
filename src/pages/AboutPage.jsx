@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 
 export default function AboutPage({ setMode, setShowAuthModal }) {
   return (
-    <div className="flex-1 bg-surface-50">
+    <div className="flex-1 bg-slate-900">
       <Helmet>
         <title>Hakkımızda - Sevgili Bul</title>
         <meta name="description" content="Sevgili Bul hakkında merak ettikleriniz. Vizyonumuz, güvenli canlı sohbet ve arkadaşlık ilkelerimiz." />
@@ -19,13 +19,13 @@ export default function AboutPage({ setMode, setShowAuthModal }) {
       {/* Content Section */}
       <section className="py-16 px-4">
         <div className="max-w-3xl mx-auto prose prose-slate prose-lg">
-          <h2 className="text-3xl font-bold text-surface-900 mb-6">Vizyonumuz</h2>
-          <p className="text-stone-600 mb-8 leading-relaxed">
+          <h2 className="text-3xl font-bold text-white mb-6">Vizyonumuz</h2>
+          <p className="text-slate-300 mb-8 leading-relaxed">
             Günümüzün hızlı temposunda yeni insanlarla tanışmak, anlamlı bağlar kurmak veya sadece keyifli bir sohbet etmek giderek zorlaşıyor. Sevgili Bul olarak vizyonumuz; mesafeleri ortadan kaldırarak, güvenli ve şeffaf bir ortamda insanların birbirleriyle kaynaşmasını sağlamaktır. Yenilikçi eşleşme algoritmamız sayesinde, ilgi alanlarınıza ve yaşam tarzınıza en uygun profilleri saniyeler içinde karşınızda bulabilirsiniz.
           </p>
 
-          <h2 className="text-3xl font-bold text-surface-900 mb-6">Neden Sevgili Bul?</h2>
-          <ul className="space-y-4 mb-8 text-stone-600">
+          <h2 className="text-3xl font-bold text-white mb-6">Neden Sevgili Bul?</h2>
+          <ul className="space-y-4 mb-8 text-slate-300">
             <li className="flex items-start">
               <span className="text-brand-500 font-bold mr-3">✓</span>
               <span><strong>Anlık ve Kesintisiz İletişim:</strong> Canlı mesajlaşma altyapımız ile beklemeden, anında sohbet etmenin keyfini çıkarın.</span>
@@ -40,12 +40,12 @@ export default function AboutPage({ setMode, setShowAuthModal }) {
             </li>
           </ul>
 
-          <h2 className="text-3xl font-bold text-surface-900 mb-6">Nasıl Çalışır?</h2>
-          <p className="text-stone-600 mb-8 leading-relaxed">
+          <h2 className="text-3xl font-bold text-white mb-6">Nasıl Çalışır?</h2>
+          <p className="text-slate-300 mb-8 leading-relaxed">
             Sisteme katılmak tamamen ücretsizdir! Üye olduktan sonra profilinizi doldurur, ilgi alanlarınızı belirtirsiniz. Akıllı sistemimiz sizi, kriterlerinize en uygun aktif üyelerle eşleştirir. Şehrinizdeki insanları keşfedebilir, onlara selam gönderebilir ve özel mesajlaşma odalarında sohbeti derinleştirebilirsiniz.
           </p>
 
-          <div className="bg-brand-50 p-8 rounded-2xl border border-brand-100 text-center mt-12">
+          <div className="bg-brand-50 p-8 rounded-2xl border border-slate-700 text-center mt-12">
             <h3 className="text-2xl font-black text-brand-900 mb-3">Sen de Aramıza Katıl!</h3>
             <p className="text-brand-800 mb-6 font-medium">Binlerce kişi şu an burada sohbet ediyor. Seni de aramızda görmek istiyoruz.</p>
             <button 

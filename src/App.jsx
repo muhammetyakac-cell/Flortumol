@@ -2115,9 +2115,9 @@ export default function App() {
 
         /* ======================= USER SCREEN: CHAT ======================= */
         : userView === 'chat' ? (
-          <div className="flex-1 flex flex-col md:flex-row gap-6 bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm overflow-hidden h-[calc(100vh-140px)]">
+          <div className="flex-1 flex flex-col md:flex-row gap-6 bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm overflow-hidden h-[calc(100vh-140px)] min-h-0">
              {/* Contact List */}
-             <div className="w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-800/50">
+             <div className="w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-800/50 h-full min-h-0">
                <div className="p-5 border-b border-slate-800">
                  <h3 className="text-xl font-black text-white">Mesajlarım</h3>
                </div>
@@ -2146,7 +2146,7 @@ export default function App() {
              </div>
 
              {/* Active Chat */}
-             <div className="flex-1 flex flex-col bg-slate-900 relative">
+             <div className="flex-1 flex flex-col bg-slate-900 relative h-full min-h-0">
                 {!selectedProfile ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
                     <span className="text-4xl mb-4">💬</span>

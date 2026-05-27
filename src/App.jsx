@@ -1385,12 +1385,12 @@ export default function App() {
               className={`text-2xl font-black tracking-tight flex items-center gap-2 ${!isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
               title={!isAdmin ? 'Keşfet sayfasına dön' : undefined}
             >
-              <span className={`flex items-center justify-center w-8 h-8 rounded-lg shadow-inner ${isAdmin ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white' : 'bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-white'}`}>✦</span>
+              <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
               <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Flort.</span>
             </button>
           ) : (
             <Link to="/" className="text-2xl font-black tracking-tight flex items-center gap-2 cursor-pointer">
-              <span className="flex items-center justify-center w-8 h-8 rounded-lg shadow-inner bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-white">✦</span>
+              <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Flort.</span>
             </Link>
           )}
@@ -1494,7 +1494,7 @@ export default function App() {
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
                   <div className="col-span-1 md:col-span-2">
                     <div className="text-2xl font-black text-white flex items-center gap-2 mb-4">
-                      <span className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-fuchsia-500 to-indigo-500 text-white">✦</span>
+                      <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
                       <span>Flort.</span>
                     </div>
                     <p className="text-sm leading-relaxed max-w-sm">Türkiye'nin en güvenilir, hızlı ve dinamik canlı sohbet ve arkadaşlık platformu. Yeni insanlarla tanışmanın en güvenli yolu.</p>

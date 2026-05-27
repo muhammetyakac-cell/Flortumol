@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-[#F4F7FB] text-slate-800 overflow-x-hidden;
+  }
+}
+
+/* --- MODERN SCROLLBAR --- */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* --- CHAT BUBBLE TAILS --- */
+.msg-tail-member {
+  position: relative;
+  border-bottom-right-radius: 4px !important;
+}
+.msg-tail-member::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  background: inherit;
+  border-bottom-left-radius: 16px;
+  z-index: -1;
+}
+
+.msg-tail-virtual {
+  position: relative;
+  border-bottom-left-radius: 4px !important;
+}
+.msg-tail-virtual::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: -6px;
+  width: 16px;
+  height: 16px;
+  background: inherit;
+  border-bottom-right-radius: 16px;
+  z-index: -1;
+}
+
+/* Base custom animations if needed */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}

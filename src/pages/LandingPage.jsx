@@ -1,8 +1,13 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function LandingPage({ setMode, setShowAuthModal }) {
   return (
     <div className="flex-1 flex flex-col">
+      <Helmet>
+        <title>Sevgili Bul - Yeni İnsanlarla Tanışın & Canlı Sohbet Edin</title>
+        <meta name="description" content="Sevgili Bul ile Türkiye'nin dört bir yanından insanlarla tanışın. Güvenli, hızlı ve heyecanlı bir flört deneyimi sizi bekliyor." />
+      </Helmet>
       {/* --- HERO --- */}
       <section className="relative text-center py-20 md:py-28 px-4 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-50 via-white to-indigo-50 -z-10" />

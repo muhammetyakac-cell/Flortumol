@@ -1,8 +1,13 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function PrivacyPage() {
   return (
     <div className="flex-1 bg-white">
+      <Helmet>
+        <title>Gizlilik Politikası - Sevgili Bul</title>
+        <meta name="description" content="Sevgili Bul Gizlilik Politikası. Veri güvenliğiniz ve kişisel bilgilerinizin nasıl korunduğu hakkında detaylı bilgiler." />
+      </Helmet>
       <section className="bg-slate-50 border-b border-slate-200 py-16 px-4 text-center">
         <h1 className="text-4xl font-black text-slate-900 mb-4">Gizlilik Politikası</h1>
         <p className="text-slate-500 font-medium">Son Güncelleme: 1 Ocak 2026</p>

@@ -1,8 +1,13 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function AboutPage({ setMode, setShowAuthModal }) {
   return (
     <div className="flex-1 bg-white">
+      <Helmet>
+        <title>Hakkımızda - Sevgili Bul</title>
+        <meta name="description" content="Sevgili Bul hakkında merak ettikleriniz. Vizyonumuz, güvenli canlı sohbet ve arkadaşlık ilkelerimiz." />
+      </Helmet>
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white py-20 px-4 text-center">
         <h1 className="text-4xl md:text-5xl font-black mb-4">Hakkımızda</h1>

@@ -7,6 +7,7 @@ import LandingPage from './pages/LandingPage';
 import AboutPage from './pages/AboutPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
+import CityPage from './pages/CityPage';
 import { supabase } from './supabase';
 import { useAuth } from './hooks/useAuth';
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
@@ -1385,12 +1386,12 @@ export default function App() {
               className={`text-2xl font-black tracking-tight flex items-center gap-2 ${!isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
               title={!isAdmin ? 'Keşfet sayfasına dön' : undefined}
             >
-              <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
+              <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
               <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Sevgili Bul</span>
             </button>
           ) : (
             <Link to="/" className="text-2xl font-black tracking-tight flex items-center gap-2 cursor-pointer">
-              <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
+              <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Sevgili Bul</span>
             </Link>
           )}
@@ -1486,6 +1487,7 @@ export default function App() {
                 <Route path="/hakkimizda" element={<AboutPage setMode={setMode} setShowAuthModal={setShowAuthModal} />} />
                 <Route path="/gizlilik-politikasi" element={<PrivacyPage />} />
                 <Route path="/kullanim-kosullari" element={<TermsPage />} />
+                <Route path="/:city" element={<CityPage setMode={setMode} setShowAuthModal={setShowAuthModal} />} />
                 <Route path="*" element={<LandingPage setMode={setMode} setShowAuthModal={setShowAuthModal} />} />
               </Routes>
               
@@ -1494,7 +1496,7 @@ export default function App() {
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
                   <div className="col-span-1 md:col-span-2">
                     <div className="text-2xl font-black text-white flex items-center gap-2 mb-4">
-                      <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
+                      <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
                       <span>Sevgili Bul</span>
                     </div>
                     <p className="text-sm leading-relaxed max-w-sm">Türkiye'nin en güvenilir, hızlı ve dinamik canlı sohbet ve arkadaşlık platformu. Yeni insanlarla tanışmanın en güvenli yolu.</p>
@@ -1584,7 +1586,7 @@ export default function App() {
                   {/* Modal Right: Graphic */}
                   <div className="hidden md:flex relative bg-slate-900 p-10 flex-col justify-end overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/20 to-indigo-600/40 mix-blend-overlay" />
-                    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80" alt="Sevgili Bul - Canlı Sohbet Platformu" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" />
+                    <img loading="lazy" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?fm=webp&fit=crop&w=1000&q=80" alt="Sevgili Bul - Canlı Sohbet Platformu" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" />
                     <div className="relative z-10 text-white">
                       <h3 className="text-2xl font-black mb-2 leading-tight">Gerçek Kişilerle<br/>Canlı Sohbet Deneyimi</h3>
                       <p className="text-slate-300 font-medium text-sm">Hemen katıl ve sana en uygun eşleşmeleri saniyeler içinde bul.</p>
@@ -1873,7 +1875,7 @@ export default function App() {
                            📸 Fotoğraf Yükle
                            <input type="file" accept="image/*" className="hidden" onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; const url = await uploadImage(file, 'virtual-profiles'); if (url) setProfileForm((s) => ({ ...s, photo_url: url })); }} />
                          </label>
-                         {profileForm.photo_url && <img src={profileForm.photo_url} alt="Önizleme" className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm" />}
+                         {profileForm.photo_url && <img loading="lazy" src={profileForm.photo_url} alt="Önizleme" className="w-16 h-16 object-cover rounded-xl border border-slate-200 shadow-sm" />}
                       </div>
 
                       <button onClick={createVirtualProfile} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-colors">
@@ -1957,7 +1959,7 @@ export default function App() {
               <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
                  <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col items-center text-center">
                     <div className="w-24 h-24 rounded-full bg-slate-200 overflow-hidden mb-3 border-4 border-white shadow-md">
-                      {selectedThreadProfile?.photo_url ? <img src={selectedThreadProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-indigo-100" />}
+                      {selectedThreadProfile?.photo_url ? <img loading="lazy" src={selectedThreadProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-indigo-100" />}
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">{selectedThreadProfile?.name || '-'}</h3>
                     <p className="text-sm text-slate-500 font-medium">{selectedThreadProfile?.age} • {selectedThreadProfile?.city}</p>
@@ -1967,7 +1969,7 @@ export default function App() {
                     <h4 className="text-sm font-bold text-slate-900 mb-3">Sohbet Edilen Kullanıcı</h4>
                     <div className="flex items-center gap-3">
                       <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-200 border border-slate-200 shadow-sm">
-                        {selectedMemberProfile?.photo_url ? <img src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
+                        {selectedMemberProfile?.photo_url ? <img loading="lazy" src={selectedMemberProfile.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-slate-400 font-bold">{(selectedThread?.member_username || '?').slice(0,1).toUpperCase()}</div>}
                       </div>
                       <div className="min-w-0">
                         <p className="font-bold text-slate-900 truncate">{selectedThread?.member_username || 'Kullanıcı seçilmedi'}</p>
@@ -2062,7 +2064,7 @@ export default function App() {
                   {spotlightProfiles.slice(0, 3).map((profile) => (
                     <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-40 text-left border border-slate-200 shadow-sm">
                       {profile.photo_url ? (
-                        <img src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <img loading="lazy" src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       ) : (
                         <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300" />
                       )}
@@ -2082,7 +2084,7 @@ export default function App() {
                 <div key={profile.id} className="group bg-white/95 backdrop-blur-sm rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                   <div className="relative h-72 overflow-hidden bg-slate-100">
                     {profile.photo_url ? (
-                      <img src={profile.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <img loading="lazy" src={profile.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl font-black text-slate-300">{profile.name.slice(0,1)}</div>
                     )}
@@ -2129,7 +2131,7 @@ export default function App() {
                    <button key={p.id} onClick={() => setSelectedProfileId(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-white shadow-sm border border-slate-200' : 'hover:bg-slate-100 border border-transparent'}`}>
                      <div className="relative">
                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200">
-                         {p.photo_url ? <img src={p.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-slate-400">{p.name.slice(0,1)}</div>}
+                         {p.photo_url ? <img loading="lazy" src={p.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-slate-400">{p.name.slice(0,1)}</div>}
                        </div>
                        {effectiveOnlineProfiles[p.id] && <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full" />}
                      </div>
@@ -2154,7 +2156,7 @@ export default function App() {
                   <>
                     <div className="px-6 py-4 border-b border-slate-100 flex items-center gap-4 bg-white z-10 shadow-sm">
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
-                         {selectedProfile.photo_url && <img src={selectedProfile.photo_url} className="w-full h-full object-cover" />}
+                         {selectedProfile.photo_url && <img loading="lazy" src={selectedProfile.photo_url} className="w-full h-full object-cover" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-slate-900 leading-tight">{selectedProfile.name}</h3>
@@ -2232,7 +2234,7 @@ export default function App() {
                  <div className="space-y-4">
                    <div className="flex items-center gap-6 mb-6">
                      <div className="w-24 h-24 rounded-full bg-slate-100 border border-slate-200 overflow-hidden">
-                       {memberProfile.photo_url && <img src={memberProfile.photo_url} className="w-full h-full object-cover" />}
+                       {memberProfile.photo_url && <img loading="lazy" src={memberProfile.photo_url} className="w-full h-full object-cover" />}
                      </div>
                      <label className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-xl cursor-pointer transition-colors">
                        Fotoğraf Değiştir

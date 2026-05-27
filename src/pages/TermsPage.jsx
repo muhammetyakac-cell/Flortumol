@@ -1,8 +1,13 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 
 export default function TermsPage() {
   return (
     <div className="flex-1 bg-white">
+      <Helmet>
+        <title>Kullanım Koşulları - Sevgili Bul</title>
+        <meta name="description" content="Sevgili Bul kullanım koşulları ve kuralları. Güvenli bir platform için üyelerimizin uyması gereken şartlar." />
+      </Helmet>
       <section className="bg-slate-50 border-b border-slate-200 py-16 px-4 text-center">
         <h1 className="text-4xl font-black text-slate-900 mb-4">Kullanım Koşulları</h1>
         <p className="text-slate-500 font-medium">Lütfen platformumuzu kullanmadan önce dikkatlice okuyunuz.</p>

@@ -27,15 +27,15 @@ export default function AboutPage({ setMode, setShowAuthModal }) {
           <h2 className="text-3xl font-bold text-slate-900 mb-6">Neden Sevgili Bul?</h2>
           <ul className="space-y-4 mb-8 text-slate-600">
             <li className="flex items-start">
-              <span className="text-fuchsia-600 font-bold mr-3">✓</span>
+              <span className="text-brand-500 font-bold mr-3">✓</span>
               <span><strong>Anlık ve Kesintisiz İletişim:</strong> Canlı mesajlaşma altyapımız ile beklemeden, anında sohbet etmenin keyfini çıkarın.</span>
             </li>
             <li className="flex items-start">
-              <span className="text-fuchsia-600 font-bold mr-3">✓</span>
+              <span className="text-brand-500 font-bold mr-3">✓</span>
               <span><strong>Üst Düzey Güvenlik:</strong> Gizliliğiniz bizim için her şeyden önemlidir. Tüm mesajlaşmalarınız uçtan uca korunur ve üçüncü şahıslarla paylaşılmaz.</span>
             </li>
             <li className="flex items-start">
-              <span className="text-fuchsia-600 font-bold mr-3">✓</span>
+              <span className="text-brand-500 font-bold mr-3">✓</span>
               <span><strong>Gerçek Profiller:</strong> Topluluğumuzun kalitesini korumak için profil doğrulama adımlarına önem veriyoruz. Sahte hesaplara karşı sıfır tolerans politikası izliyoruz.</span>
             </li>
           </ul>
@@ -45,12 +45,12 @@ export default function AboutPage({ setMode, setShowAuthModal }) {
             Sisteme katılmak tamamen ücretsizdir! Üye olduktan sonra profilinizi doldurur, ilgi alanlarınızı belirtirsiniz. Akıllı sistemimiz sizi, kriterlerinize en uygun aktif üyelerle eşleştirir. Şehrinizdeki insanları keşfedebilir, onlara selam gönderebilir ve özel mesajlaşma odalarında sohbeti derinleştirebilirsiniz.
           </p>
 
-          <div className="bg-fuchsia-50 p-8 rounded-2xl border border-fuchsia-100 text-center mt-12">
-            <h3 className="text-2xl font-black text-fuchsia-900 mb-3">Sen de Aramıza Katıl!</h3>
-            <p className="text-fuchsia-800 mb-6 font-medium">Binlerce kişi şu an burada sohbet ediyor. Seni de aramızda görmek istiyoruz.</p>
+          <div className="bg-brand-50 p-8 rounded-2xl border border-brand-100 text-center mt-12">
+            <h3 className="text-2xl font-black text-brand-900 mb-3">Sen de Aramıza Katıl!</h3>
+            <p className="text-brand-800 mb-6 font-medium">Binlerce kişi şu an burada sohbet ediyor. Seni de aramızda görmek istiyoruz.</p>
             <button 
               onClick={() => { setMode('user'); setShowAuthModal(true); }}
-              className="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105"
+              className="bg-brand-500 hover:bg-brand-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105"
             >
               Hemen Kayıt Ol
             </button>

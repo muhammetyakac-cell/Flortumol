@@ -1374,7 +1374,7 @@ export default function App() {
 
   // --- MODERNIZED UI RENDERING ---
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-fuchsia-500/30">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-brand-500/30">
       
       {/* 🚀 GLOBAL HEADER */}
       <header className={`sticky top-0 z-40 border-b backdrop-blur-xl transition-all ${isAdmin ? 'bg-slate-900/95 border-slate-800' : 'bg-white/80 border-slate-200'} px-6 py-4 shadow-sm`}>
@@ -1740,7 +1740,7 @@ export default function App() {
                        {!!aiSuggestions.length && (
                          <div className="flex flex-wrap gap-2">
                            {aiSuggestions.map((sugg) => (
-                             <button key={sugg} onClick={() => setAdminReply(sugg)} className="px-3 py-1.5 bg-fuchsia-50 text-fuchsia-700 hover:bg-fuchsia-100 text-xs font-semibold rounded-full border border-fuchsia-200 transition-colors">
+                             <button key={sugg} onClick={() => setAdminReply(sugg)} className="px-3 py-1.5 bg-brand-50 text-fuchsia-700 hover:bg-fuchsia-100 text-xs font-semibold rounded-full border border-fuchsia-200 transition-colors">
                                ✨ {sugg}
                              </button>
                            ))}
@@ -2178,7 +2178,7 @@ export default function App() {
                       </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-fuchsia-50/70 via-white to-slate-50 border-y border-fuchsia-100 shadow-inner" ref={chatBoxRef}>
+                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-fuchsia-50/70 via-white to-slate-50 border-y border-brand-100 shadow-inner" ref={chatBoxRef}>
                       {messages.map(msg => {
                         const isFocusedMemberMessage = msg.sender_role === 'member' && msg.id === focusedMessageId;
                         return (
@@ -2187,7 +2187,7 @@ export default function App() {
                           ref={isFocusedMemberMessage ? latestMemberMessageRef : null}
                           className={`flex flex-col max-w-[75%] scroll-mt-28 ${msg.sender_role === 'member' ? 'items-end ml-auto' : 'items-start mr-auto'}`}
                         >
-                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 ${msg.sender_role === 'member' ? 'bg-fuchsia-500 text-white msg-tail-member' : 'bg-white border border-slate-200 text-slate-800 msg-tail-virtual'} ${isFocusedMemberMessage ? 'ring-4 ring-fuchsia-300/70 shadow-xl scale-[1.02]' : ''}`}>
+                          <div className={`px-4 py-2.5 rounded-2xl shadow-sm transition-all duration-300 ${msg.sender_role === 'member' ? 'bg-brand-500 text-white msg-tail-member' : 'bg-white border border-slate-200 text-slate-800 msg-tail-virtual'} ${isFocusedMemberMessage ? 'ring-4 ring-fuchsia-300/70 shadow-xl scale-[1.02]' : ''}`}>
                             <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                           </div>
                           <div className="flex items-center gap-1 mt-1 px-1">
@@ -2199,7 +2199,7 @@ export default function App() {
                       {typingLabel && <div className="text-xs font-bold text-slate-400 ml-2 animate-pulse">{typingLabel}</div>}
                     </div>
 
-                    <div className="p-4 bg-white border-t border-fuchsia-100 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
+                    <div className="p-4 bg-white border-t border-brand-100 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
                       <div className="flex items-center justify-between mb-2 px-1">
                         <p className="text-xs font-bold text-slate-500">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
                         <p className="hidden sm:block text-[11px] font-black uppercase tracking-wide text-fuchsia-500">Enter ile gönder · Shift+Enter yeni satır</p>
@@ -2214,7 +2214,7 @@ export default function App() {
                           placeholder="Mesajınızı yazın..."
                           className="flex-1 bg-transparent px-3 py-2 text-base font-semibold text-slate-800 placeholder:text-slate-400 focus:outline-none resize-none min-h-[48px] max-h-[120px]"
                         />
-                        <button onClick={sendMessage} className="w-12 h-12 flex items-center justify-center bg-fuchsia-600 hover:bg-fuchsia-700 text-white rounded-2xl shadow-md shadow-fuchsia-500/30 transition-transform active:scale-95">
+                        <button onClick={sendMessage} className="w-12 h-12 flex items-center justify-center bg-brand-500 hover:bg-brand-600 text-white rounded-2xl shadow-md shadow-fuchsia-500/30 transition-transform active:scale-95">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                         </button>
                       </div>

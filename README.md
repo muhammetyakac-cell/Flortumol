@@ -1,4 +1,4 @@
-# Flort Chat (Vite + Supabase)
+# Sevgili Bul (Vite + Supabase)
 
 Bu sürümde admin ve üyeler profil fotoğrafı yükleyebilir.
 
@@ -65,7 +65,7 @@ Bu yapı demo/prototip içindir. Son güncellemede `members.password` kaldırıl
   - `STRIPE_CURRENCY` (opsiyonel, varsayılan: `try`)
   - `STRIPE_UNIT_AMOUNT_PER_COIN` (opsiyonel, varsayılan: `10`)
   - `APP_BASE_URL` (opsiyonel; success/cancel URL üretiminde kullanılır)
-- Ödeme sonrası coin yükleme için Stripe webhook’unuzu `https://flortbeta.vercel.app/api/webhook` endpoint’ine yönlendirin. Endpoint, `STRIPE_WEBHOOK_SECRET` ile Stripe imzasını doğrular ve `checkout.session.completed` event metadata’sındaki `member_id` + `coin_amount` ile bakiyeyi günceller.
+- Ödeme sonrası coin yükleme için Stripe webhook’unuzu `https://sevgilibul.help/api/webhook` endpoint’ine yönlendirin. Endpoint, `STRIPE_WEBHOOK_SECRET` ile Stripe imzasını doğrular ve `checkout.session.completed` event metadata’sındaki `member_id` + `coin_amount` ile bakiyeyi günceller.
 - Endpoint ayrıca imza doğrulaması başarısız olursa Stripe Event API (`STRIPE_SECRET_KEY`) üzerinden event doğrulaması yapar; bu sayede bazı hosting body parse farklarında webhook akışı daha dayanıklı çalışır.
 
 ## Vercel Deploy

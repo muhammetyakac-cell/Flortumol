@@ -7,7 +7,7 @@ export default function AboutPage({ setMode, setShowAuthModal }) {
       <section className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white py-20 px-4 text-center">
         <h1 className="text-4xl md:text-5xl font-black mb-4">Hakkımızda</h1>
         <p className="text-lg text-slate-300 max-w-2xl mx-auto font-medium">
-          Flört Chat, Türkiye'nin en dinamik, güvenilir ve modern canlı sohbet platformudur. Bizimle yeni insanlarla tanışmak artık çok daha kolay.
+          Sevgili Bul, Türkiye'nin en dinamik, güvenilir ve modern canlı sohbet platformudur. Bizimle yeni insanlarla tanışmak artık çok daha kolay.
         </p>
       </section>
 
@@ -16,10 +16,10 @@ export default function AboutPage({ setMode, setShowAuthModal }) {
         <div className="max-w-3xl mx-auto prose prose-slate prose-lg">
           <h2 className="text-3xl font-bold text-slate-900 mb-6">Vizyonumuz</h2>
           <p className="text-slate-600 mb-8 leading-relaxed">
-            Günümüzün hızlı temposunda yeni insanlarla tanışmak, anlamlı bağlar kurmak veya sadece keyifli bir sohbet etmek giderek zorlaşıyor. Flört Chat olarak vizyonumuz; mesafeleri ortadan kaldırarak, güvenli ve şeffaf bir ortamda insanların birbirleriyle kaynaşmasını sağlamaktır. Yenilikçi eşleşme algoritmamız sayesinde, ilgi alanlarınıza ve yaşam tarzınıza en uygun profilleri saniyeler içinde karşınızda bulabilirsiniz.
+            Günümüzün hızlı temposunda yeni insanlarla tanışmak, anlamlı bağlar kurmak veya sadece keyifli bir sohbet etmek giderek zorlaşıyor. Sevgili Bul olarak vizyonumuz; mesafeleri ortadan kaldırarak, güvenli ve şeffaf bir ortamda insanların birbirleriyle kaynaşmasını sağlamaktır. Yenilikçi eşleşme algoritmamız sayesinde, ilgi alanlarınıza ve yaşam tarzınıza en uygun profilleri saniyeler içinde karşınızda bulabilirsiniz.
           </p>
 
-          <h2 className="text-3xl font-bold text-slate-900 mb-6">Neden Flört Chat?</h2>
+          <h2 className="text-3xl font-bold text-slate-900 mb-6">Neden Sevgili Bul?</h2>
           <ul className="space-y-4 mb-8 text-slate-600">
             <li className="flex items-start">
               <span className="text-fuchsia-600 font-bold mr-3">✓</span>

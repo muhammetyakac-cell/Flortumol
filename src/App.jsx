@@ -1386,12 +1386,12 @@ export default function App() {
               title={!isAdmin ? 'Keşfet sayfasına dön' : undefined}
             >
               <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
-              <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Flort.</span>
+              <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600'}>Sevgili Bul</span>
             </button>
           ) : (
             <Link to="/" className="text-2xl font-black tracking-tight flex items-center gap-2 cursor-pointer">
               <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Flort.</span>
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">Sevgili Bul</span>
             </Link>
           )}
           <div className="flex items-center gap-4">
@@ -1495,7 +1495,7 @@ export default function App() {
                   <div className="col-span-1 md:col-span-2">
                     <div className="text-2xl font-black text-white flex items-center gap-2 mb-4">
                       <img src="/favicon.svg" className="w-8 h-8" alt="Flört Logo" />
-                      <span>Flort.</span>
+                      <span>Sevgili Bul</span>
                     </div>
                     <p className="text-sm leading-relaxed max-w-sm">Türkiye'nin en güvenilir, hızlı ve dinamik canlı sohbet ve arkadaşlık platformu. Yeni insanlarla tanışmanın en güvenli yolu.</p>
                   </div>
@@ -1517,7 +1517,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="max-w-5xl mx-auto mt-12 pt-8 border-t border-slate-800 text-sm text-center">
-                  &copy; {new Date().getFullYear()} Flört Chat Platformu. Tüm hakları saklıdır.
+                  &copy; {new Date().getFullYear()} Sevgili Bul Platformu. Tüm hakları saklıdır.
                 </div>
               </footer>
             </div>
@@ -1584,7 +1584,7 @@ export default function App() {
                   {/* Modal Right: Graphic */}
                   <div className="hidden md:flex relative bg-slate-900 p-10 flex-col justify-end overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/20 to-indigo-600/40 mix-blend-overlay" />
-                    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80" alt="Flört Chat - Canlı Sohbet Platformu" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" />
+                    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80" alt="Sevgili Bul - Canlı Sohbet Platformu" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-luminosity" />
                     <div className="relative z-10 text-white">
                       <h3 className="text-2xl font-black mb-2 leading-tight">Gerçek Kişilerle<br/>Canlı Sohbet Deneyimi</h3>
                       <p className="text-slate-300 font-medium text-sm">Hemen katıl ve sana en uygun eşleşmeleri saniyeler içinde bul.</p>

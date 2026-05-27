@@ -12,7 +12,7 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-fuchsia-600 to-indigo-600">Canlı Sohbet Et</span>
         </h1>
         <p className="mt-6 text-xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
-          Flört Chat ile Türkiye'nin dört bir yanından insanlarla tanışın. Güvenli, hızlı ve heyecanlı bir flört deneyimi sizi bekliyor.
+          Sevgili Bul ile Türkiye'nin dört bir yanından insanlarla tanışın. Güvenli, hızlı ve heyecanlı bir flört deneyimi sizi bekliyor.
         </p>
         <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center">
           <button
@@ -76,7 +76,7 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
       {/* --- ÖZELLIKLER --- */}
       <section className="py-16 px-4 bg-slate-50" aria-label="Platform özellikleri">
         <div className="max-w-5xl mx-auto">
-          <h2 className="text-3xl font-black text-slate-900 text-center mb-12">Neden Flört Chat?</h2>
+          <h2 className="text-3xl font-black text-slate-900 text-center mb-12">Neden Sevgili Bul?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               {

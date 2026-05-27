@@ -11,12 +11,12 @@ export default function TermsPage() {
       <section className="py-12 px-4">
         <div className="max-w-3xl mx-auto prose prose-slate">
           <p className="text-slate-600 leading-relaxed mb-6">
-            Flört Chat web sitesine ve mobil uygulamasına erişim sağlayarak veya üye olarak aşağıdaki şartları ve kuralları peşinen kabul etmiş sayılırsınız. Kurallara uyulmaması durumunda hesaplarınız askıya alınabilir veya kalıcı olarak silinebilir.
+            Sevgili Bul web sitesine ve mobil uygulamasına erişim sağlayarak veya üye olarak aşağıdaki şartları ve kuralları peşinen kabul etmiş sayılırsınız. Kurallara uyulmaması durumunda hesaplarınız askıya alınabilir veya kalıcı olarak silinebilir.
           </p>
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">1. Yaş Sınırı</h2>
           <p className="text-slate-600 leading-relaxed mb-4">
-            Flört Chat hizmetlerini kullanabilmek için en az 18 yaşında olmanız gerekmektedir. 18 yaşın altındaki kullanıcıların platforma kayıt olması yasaktır. Tespit edilen reşit olmayan hesaplar derhal silinir.
+            Sevgili Bul hizmetlerini kullanabilmek için en az 18 yaşında olmanız gerekmektedir. 18 yaşın altındaki kullanıcıların platforma kayıt olması yasaktır. Tespit edilen reşit olmayan hesaplar derhal silinir.
           </p>
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">2. Topluluk Kuralları ve Saygı</h2>
@@ -31,12 +31,12 @@ export default function TermsPage() {
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">4. İçerik Sorumluluğu</h2>
           <p className="text-slate-600 leading-relaxed mb-4">
-            Flört Chat üzerinde paylaştığınız tüm metin, fotoğraf ve diğer içeriklerin yasal sorumluluğu tamamen size aittir. Yasa dışı, telif hakkı ihlali barındıran veya müstehcen içeriklerin paylaşımı yasaktır. Platformumuz bu tür içerikleri bildirim olmaksızın kaldırma hakkını saklı tutar.
+            Sevgili Bul üzerinde paylaştığınız tüm metin, fotoğraf ve diğer içeriklerin yasal sorumluluğu tamamen size aittir. Yasa dışı, telif hakkı ihlali barındıran veya müstehcen içeriklerin paylaşımı yasaktır. Platformumuz bu tür içerikleri bildirim olmaksızın kaldırma hakkını saklı tutar.
           </p>
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">5. Koşullarda Değişiklik</h2>
           <p className="text-slate-600 leading-relaxed mb-4">
-            Flört Chat yönetimi, bu kullanım koşullarını önceden haber vermeksizin tek taraflı olarak değiştirme hakkını saklı tutar. Değişiklikler siteye eklendiği an yürürlüğe girer.
+            Sevgili Bul yönetimi, bu kullanım koşullarını önceden haber vermeksizin tek taraflı olarak değiştirme hakkını saklı tutar. Değişiklikler siteye eklendiği an yürürlüğe girer.
           </p>
         </div>
       </section>

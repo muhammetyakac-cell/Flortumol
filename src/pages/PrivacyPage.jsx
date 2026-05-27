@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <section className="py-12 px-4">
         <div className="max-w-3xl mx-auto prose prose-slate">
           <p className="text-slate-600 leading-relaxed mb-6">
-            Flört Chat olarak, gizliliğinize ve kişisel verilerinizin güvenliğine büyük önem veriyoruz. Sitemize üye olarak veya hizmetlerimizi kullanarak bu Gizlilik Politikası'nda belirtilen şartları kabul etmiş olursunuz.
+            Sevgili Bul olarak, gizliliğinize ve kişisel verilerinizin güvenliğine büyük önem veriyoruz. Sitemize üye olarak veya hizmetlerimizi kullanarak bu Gizlilik Politikası'nda belirtilen şartları kabul etmiş olursunuz.
           </p>
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">1. Toplanan Veriler</h2>
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">2. Veri Güvenliği ve Şifreleme</h2>
           <p className="text-slate-600 leading-relaxed mb-4">
-            Flört Chat üzerindeki tüm mesajlaşmalarınız güvenli sunucularımızda şifreli olarak saklanır. Sohbet odalarındaki özel mesajlarınıza sizin ve mesajlaştığınız kişinin dışında üçüncü şahıslar kesinlikle erişemez. Kredi kartı gibi finansal bilgileriniz sistemlerimizde tutulmaz, güvenli ödeme kuruluşları aracılığıyla işlenir.
+            Sevgili Bul üzerindeki tüm mesajlaşmalarınız güvenli sunucularımızda şifreli olarak saklanır. Sohbet odalarındaki özel mesajlarınıza sizin ve mesajlaştığınız kişinin dışında üçüncü şahıslar kesinlikle erişemez. Kredi kartı gibi finansal bilgileriniz sistemlerimizde tutulmaz, güvenli ödeme kuruluşları aracılığıyla işlenir.
           </p>
 
           <h2 className="text-2xl font-bold text-slate-900 mt-8 mb-4">3. Çerezler (Cookies)</h2>

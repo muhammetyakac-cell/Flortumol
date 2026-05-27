@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /admin/
 
-Sitemap: https://flortbeta.vercel.app/sitemap.xml
+Sitemap: https://sevgilibul.help/sitemap.xml

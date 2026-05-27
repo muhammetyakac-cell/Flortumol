@@ -140,6 +140,7 @@ export default function App() {
   const [heartedProfiles, setHeartedProfiles] = useState({});
   const [wavedProfiles, setWavedProfiles] = useState({});
   const [userView, setUserView] = useState('discover');
+  const [mobileViewMode, setMobileViewMode] = useState('list');
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedMemberProfile, setSelectedMemberProfile] = useState(null);
@@ -1309,6 +1310,7 @@ export default function App() {
   function openChatWithProfile(profileId) {
     setSelectedProfileId(profileId);
     setUserView('chat');
+    setMobileViewMode('chat');
   }
 
   async function sendAdminReply() {
@@ -1475,7 +1477,7 @@ export default function App() {
       )}
 
       {/* 🚀 MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col max-w-[1440px] w-full mx-auto p-4 md:p-6">
+      <main className={`flex-1 flex flex-col max-w-[1440px] w-full mx-auto p-4 md:p-6 ${loggedIn && !isAdmin ? 'pb-20 md:pb-6' : ''}`}>
         
         {/* ======================= LANDING PAGE + AUTH MODAL ======================= */}
         {!loggedIn ? (
@@ -2115,9 +2117,9 @@ export default function App() {
 
         /* ======================= USER SCREEN: CHAT ======================= */
         : userView === 'chat' ? (
-          <div className="flex-1 flex flex-col md:flex-row gap-6 bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm overflow-hidden h-[calc(100vh-140px)] min-h-0">
+          <div className="flex-1 flex flex-col md:flex-row gap-6 bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm overflow-hidden h-[calc(100vh-210px)] md:h-[calc(100vh-140px)] min-h-0">
              {/* Contact List */}
-             <div className="w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-800/50 h-full min-h-0">
+             <div className={`w-full md:w-80 border-r border-slate-800 flex flex-col bg-slate-800/50 h-full min-h-0 ${mobileViewMode === 'chat' ? 'hidden md:flex' : 'flex'}`}>
                <div className="p-5 border-b border-slate-800">
                  <h3 className="text-xl font-black text-white">Mesajlarım</h3>
                </div>
@@ -2128,7 +2130,7 @@ export default function App() {
                  style={{ maxHeight: `${USER_CHAT_VISIBLE_PROFILE_COUNT * 74}px` }}
                >
                  {renderedUserProfiles.map(p => (
-                   <button key={p.id} onClick={() => setSelectedProfileId(p.id)} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-slate-900 shadow-sm border border-slate-700' : 'hover:bg-slate-800 border border-transparent'}`}>
+                   <button key={p.id} onClick={() => { setSelectedProfileId(p.id); setMobileViewMode('chat'); }} className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all ${selectedProfileId === p.id ? 'bg-slate-900 shadow-sm border border-slate-700' : 'hover:bg-slate-800 border border-transparent'}`}>
                      <div className="relative">
                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-200">
                          {p.photo_url ? <img loading="lazy" src={p.photo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center font-bold text-slate-500">{p.name.slice(0,1)}</div>}
@@ -2146,7 +2148,7 @@ export default function App() {
              </div>
 
              {/* Active Chat */}
-             <div className="flex-1 flex flex-col bg-slate-900 relative h-full min-h-0">
+             <div className={`flex-1 flex flex-col bg-slate-900 relative h-full min-h-0 ${mobileViewMode === 'list' ? 'hidden md:flex' : 'flex'}`}>
                 {!selectedProfile ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-slate-500">
                     <span className="text-4xl mb-4">💬</span>
@@ -2155,6 +2157,13 @@ export default function App() {
                 ) : (
                   <>
                     <div className="px-6 py-4 border-b border-slate-800 flex items-center gap-4 bg-slate-900 z-10 shadow-sm">
+                      <button
+                        onClick={() => setMobileViewMode('list')}
+                        className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold transition-colors"
+                        title="Mesajlara geri dön"
+                      >
+                        ←
+                      </button>
                       <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-200">
                          {selectedProfile.photo_url && <img loading="lazy" src={selectedProfile.photo_url} className="w-full h-full object-cover" />}
                       </div>
@@ -2317,6 +2326,50 @@ export default function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 📱 MOBILE BOTTOM NAVIGATION BAR */}
+      {loggedIn && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-xl border-t border-slate-800 py-2 px-6 flex items-center justify-around shadow-[0_-8px_30px_rgb(0,0,0,0.4)]">
+          {isAdmin ? (
+            ['chat', 'stats', 'settings', 'payments'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setAdminTab(tab)}
+                className={`flex flex-col items-center gap-1 text-xs font-bold transition-all ${adminTab === tab ? 'text-brand-400 scale-105' : 'text-slate-400'}`}
+              >
+                <span className="text-xl">
+                  {tab === 'chat' ? '💬' : tab === 'stats' ? '📊' : tab === 'settings' ? '⚙️' : '💳'}
+                </span>
+                <span className="text-[10px]">
+                  {tab === 'chat' ? 'Sohbet' : tab === 'stats' ? 'İstatistik' : tab === 'settings' ? 'Ayarlar' : 'Ödemeler'}
+                </span>
+              </button>
+            ))
+          ) : (
+            [
+              { view: 'discover', label: 'Keşfet', icon: '✨' },
+              { view: 'chat', label: 'Mesajlar', icon: '💬', badge: totalUnreadCount > 0 },
+              { view: 'profile', label: 'Profil', icon: '👤' },
+              { view: 'coins', label: 'Cüzdan', icon: '🪙', sub: `${memberProfile.coin_balance ?? 0} Jet` }
+            ].map((tab) => (
+              <button
+                key={tab.view}
+                onClick={() => {
+                  setUserView(tab.view);
+                  if (tab.view === 'chat') {
+                    setMobileViewMode('list');
+                  }
+                }}
+                className={`relative flex flex-col items-center gap-1 text-xs font-bold transition-all ${userView === tab.view ? 'text-brand-400 scale-105' : 'text-slate-400'}`}
+              >
+                <span className="text-xl">{tab.icon}</span>
+                <span className="text-[10px]">{tab.sub && userView !== tab.view ? tab.sub : tab.label}</span>
+                {tab.badge && <span className="absolute top-0.5 right-2.5 w-2.5 h-2.5 bg-rose-500 rounded-full border border-slate-900 animate-pulse" />}
+              </button>
+            ))
+          )}
+        </nav>
       )}
 
       <Analytics />

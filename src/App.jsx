@@ -2009,22 +2009,22 @@ export default function App() {
             <div className="pointer-events-none absolute -top-6 -left-6 w-44 h-44 bg-fuchsia-200/50 blur-3xl rounded-full" />
             <div className="pointer-events-none absolute top-20 right-0 w-56 h-56 bg-indigo-200/40 blur-3xl rounded-full" />
 
-            <div className="relative overflow-hidden rounded-[2rem] p-4 md:p-6 border border-slate-700 shadow-sm bg-gradient-to-br from-white via-fuchsia-50/60 to-indigo-50/50">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-fuchsia-400/20 to-indigo-500/20 blur-2xl rounded-full" />
+            <div className="relative overflow-hidden rounded-[2rem] p-4 md:p-6 border border-slate-700/80 shadow-md bg-slate-900/90">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-brand-500/20 to-accent-500/20 blur-2xl rounded-full" />
               <h2 className="relative text-3xl font-black text-white tracking-tight mb-2">Yeni Yüzler Keşfet ✨</h2>
-              <p className="relative text-slate-400 font-medium max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
+              <p className="relative text-slate-200 font-semibold max-w-2xl">Filtreleri kullanarak kriterlerine uygun profilleri bul ve hemen etkileşime geç.</p>
               <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Cüzdan</p>
-                  <p className="text-lg font-black text-amber-900">{memberProfile.coin_balance ?? 0} jeton</p>
+                <div className="rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-amber-400">Cüzdan</p>
+                  <p className="text-lg font-black text-amber-200">{memberProfile.coin_balance ?? 0} jeton</p>
                 </div>
                 <div className="rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Mesaj Maliyeti</p>
-                  <p className="text-lg font-black text-white">{COIN_COST_PER_MESSAGE} jeton</p>
+                  <p className="text-lg font-black text-slate-200">{COIN_COST_PER_MESSAGE} jeton</p>
                 </div>
-                <button onClick={() => setUserView('coins')} className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left hover:bg-emerald-100 transition-colors">
-                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Hızlı İşlem</p>
-                  <p className="text-lg font-black text-emerald-900">Jeton satın al →</p>
+                <button onClick={() => setUserView('coins')} className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-left hover:bg-emerald-500/20 transition-all hover:scale-[1.02] active:scale-100">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-400">Hızlı İşlem</p>
+                  <p className="text-lg font-black text-emerald-200">Jeton satın al →</p>
                 </button>
               </div>
 
@@ -2039,7 +2039,7 @@ export default function App() {
                 </div>
                 <div className="rounded-2xl bg-slate-900/70 border border-slate-700/70 px-4 py-3 backdrop-blur-md">
                   <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Uyum Skoru (Örnek)</p>
-                  <p className="text-xl font-black text-indigo-700">%{interestScore}</p>
+                  <p className="text-xl font-black text-indigo-400">%{interestScore}</p>
                 </div>
               </div>
               
@@ -2058,20 +2058,20 @@ export default function App() {
               <div className="bg-slate-900 rounded-[2rem] border border-slate-700 shadow-sm p-5 md:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-black text-white">Bugünün Öne Çıkanları</h3>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-fuchsia-100 text-fuchsia-700">Editor's pick</span>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-fuchsia-950 text-fuchsia-300 border border-fuchsia-800/30">Editor's pick</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {spotlightProfiles.slice(0, 3).map((profile) => (
-                    <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-40 text-left border border-slate-700 shadow-sm">
+                    <button key={`spot-${profile.id}`} onClick={() => openChatWithProfile(profile.id)} className="group relative overflow-hidden rounded-2xl h-64 text-left border border-slate-700 shadow-md">
                       {profile.photo_url ? (
-                        <img loading="lazy" src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <img loading="lazy" src={profile.photo_url} className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
                       ) : (
-                        <div className="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-slate-800 to-slate-900" />
                       )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/10 to-transparent" />
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <p className="text-white font-bold text-base truncate">{profile.name}, {profile.age}</p>
-                        <p className="text-slate-200 text-xs truncate">{profile.city || 'Belirtilmemiş'} • Mesaja başla</p>
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <p className="text-white font-bold text-lg leading-tight truncate">{profile.name}, {profile.age}</p>
+                        <p className="text-slate-200 text-xs font-semibold mt-1 truncate">📍 {profile.city || 'Belirtilmemiş'} • Sohbeti Başlat</p>
                       </div>
                     </button>
                   ))}
@@ -2084,7 +2084,7 @@ export default function App() {
                 <div key={profile.id} className="group bg-slate-900/95 backdrop-blur-sm rounded-3xl border border-slate-700 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col">
                   <div className="relative h-72 overflow-hidden bg-slate-800">
                     {profile.photo_url ? (
-                      <img loading="lazy" src={profile.photo_url} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <img loading="lazy" src={profile.photo_url} className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl font-black text-slate-300">{profile.name.slice(0,1)}</div>
                     )}
@@ -2199,20 +2199,20 @@ export default function App() {
                       {typingLabel && <div className="text-xs font-bold text-slate-500 ml-2 animate-pulse">{typingLabel}</div>}
                     </div>
 
-                    <div className="p-4 bg-slate-900 border-t border-slate-700 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
+                    <div className="p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-12px_30px_rgba(217,70,239,0.08)]">
                       <div className="flex items-center justify-between mb-2 px-1">
-                        <p className="text-xs font-bold text-slate-400">Mesaj gönderim maliyeti: <span className="text-amber-700">{COIN_COST_PER_MESSAGE} jeton</span></p>
+                        <p className="text-xs font-bold text-slate-400">Mesaj gönderim maliyeti: <span className="text-amber-400">{COIN_COST_PER_MESSAGE} jeton</span></p>
                         <p className="hidden sm:block text-[11px] font-black uppercase tracking-wide text-fuchsia-500">Enter ile gönder · Shift+Enter yeni satır</p>
                         {coinSpendFeedback && <span className="text-xs font-black text-rose-600">{coinSpendFeedback}</span>}
                       </div>
-                      <div className="flex items-end gap-3 bg-gradient-to-r from-fuchsia-50 via-white to-rose-50 border-2 border-fuchsia-300 rounded-3xl p-3 shadow-lg shadow-fuchsia-500/10 focus-within:border-fuchsia-500 focus-within:ring-4 focus-within:ring-fuchsia-500/20 transition-all">
+                      <div className="flex items-center gap-3 bg-slate-950 border border-slate-700/80 rounded-3xl p-3 shadow-lg shadow-fuchsia-500/5 focus-within:border-fuchsia-500 focus-within:ring-2 focus-within:ring-fuchsia-500/20 transition-all">
                         <textarea
                           ref={messageInputRef}
                           value={newMessage}
-                          onChange={(e) => { setNewMessage(e.target.value); autoResizeTextarea(e.target, 120); }}
+                          onChange={(e) => setNewMessage(e.target.value)}
                           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                           placeholder="Mesajınızı yazın..."
-                          className="flex-1 bg-transparent px-3 py-2 text-base font-semibold text-slate-200 placeholder:text-slate-500 focus:outline-none resize-none min-h-[48px] max-h-[120px]"
+                          className="flex-1 bg-transparent px-3 py-1.5 text-base font-bold text-white placeholder:text-slate-500 focus:outline-none resize-none h-12 overflow-y-auto"
                         />
                         <button onClick={sendMessage} className="w-12 h-12 flex items-center justify-center bg-brand-500 hover:bg-brand-600 text-white rounded-2xl shadow-md shadow-fuchsia-500/30 transition-transform active:scale-95">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>

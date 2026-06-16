@@ -211,3 +211,40 @@
     transparent
   );
 }
+
+/* --- ADMIN THEME TOGGLE --- */
+.admin-panel {
+  --admin-bg-primary: #0f172a;
+  --admin-bg-secondary: #1e293b;
+  --admin-bg-tertiary: #334155;
+  --admin-text-primary: #ffffff;
+  --admin-text-secondary: #cbd5e1;
+  --admin-text-muted: #94a3b8;
+  --admin-border: #334155;
+  --admin-input-bg: #1e293b;
+  --admin-input-border: #334155;
+}
+.admin-panel.light {
+  --admin-bg-primary: #ffffff;
+  --admin-bg-secondary: #f1f5f9;
+  --admin-bg-tertiary: #e2e8f0;
+  --admin-text-primary: #0f172a;
+  --admin-text-secondary: #334155;
+  --admin-text-muted: #64748b;
+  --admin-border: #cbd5e1;
+  --admin-input-bg: #ffffff;
+  --admin-input-border: #cbd5e1;
+}
+.admin-panel, .admin-panel * {
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+/* Admin CSS variable utilities */
+.admin-bg { background-color: var(--admin-bg-primary); }
+.admin-bg2 { background-color: var(--admin-bg-secondary); }
+.admin-bg3 { background-color: var(--admin-bg-tertiary); }
+.admin-text { color: var(--admin-text-primary); }
+.admin-text2 { color: var(--admin-text-secondary); }
+.admin-text3 { color: var(--admin-text-muted); }
+.admin-border { border-color: var(--admin-border); }
+.admin-input { background-color: var(--admin-input-bg); border-color: var(--admin-input-border); }

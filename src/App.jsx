@@ -133,6 +133,7 @@ export default function App() {
   const [statsRange, setStatsRange] = useState('daily');
   const [statsDateRange, setStatsDateRange] = useState({ from: '', to: '' });
   const [adminTab, setAdminTab] = useState('chat');
+  const [adminDarkMode, setAdminDarkMode] = useState(true);
   const [quickFactsText, setQuickFactsText] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [genderFilter, setGenderFilter] = useState('all');
@@ -1635,19 +1636,24 @@ export default function App() {
         )
 
         : isAdmin ? (
-          <div className="flex-1 flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)]">
+          <div className={`flex-1 flex flex-col lg:flex-row gap-6 h-[calc(100vh-100px)] admin-panel ${adminDarkMode ? 'dark' : 'light'}`}>
             
             {/* Admin Left Sidebar */}
             <aside className="w-full lg:w-80 flex flex-col gap-4 overflow-y-auto">
-               <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
-                 <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Mesaj Bekleyenler</h3>
-                 <div className="grid grid-cols-2 gap-2 mb-3">
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-800 text-slate-300'}`}>Yanıt Bekleyen</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'bg-slate-800 text-slate-300'}`}>SLA Riski</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'bg-slate-800 text-slate-300'}`}>Atanmamış</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'bg-slate-800 text-slate-300'}`}>Blacklist</button>
+               <div className="admin-bg rounded-2xl p-4 admin-border shadow-sm">
+                 <div className="flex items-center justify-between mb-3">
+                   <h3 className="text-sm font-bold admin-text3 uppercase tracking-wider">Mesaj Bekleyenler</h3>
+                   <button onClick={() => setAdminDarkMode((p) => !p)} className="px-2 py-1 rounded-lg text-xs font-bold admin-bg2 admin-text2 admin-border border transition" title="Tema değiştir">
+                     {adminDarkMode ? '☀️' : '🌙'}
+                   </button>
                  </div>
-                 <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs font-semibold">
+                 <div className="grid grid-cols-2 gap-2 mb-3">
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'admin-bg2 admin-text2'}`}>Yanıt Bekleyen</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'admin-bg2 admin-text2'}`}>SLA Riski</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'admin-bg2 admin-text2'}`}>Atanmamış</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'admin-bg2 admin-text2'}`}>Blacklist</button>
+                 </div>
+                 <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 admin-input rounded-lg px-2 py-2 text-xs font-semibold admin-text2">
                    <option value="sla_unread_recent">SLA + Unread + Son Mesaj</option>
                    <option value="sla">SLA (Bekleme Süresi)</option>
                    <option value="unread">Unread</option>
@@ -1660,20 +1666,20 @@ export default function App() {
                      const key = threadKey(thread.member_id, thread.virtual_profile_id);
                      const ops = threadOpsByKey[key] || {};
                      const waitMin = thread.last_message_at ? Math.max(0, (Date.now() - new Date(thread.last_message_at).getTime()) / 60000) : 0;
-                     return (
-                       <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-slate-800 border-slate-800 hover:border-slate-300'}`}>
-                         <div className="relative flex-shrink-0">
-                           <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700">
-                             {thread.virtual_name?.slice(0, 1)}
-                           </div>
-                           {isWait && <div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 border-2 border-white rounded-full" />}
-                         </div>
-                         <div className="flex-1 min-w-0">
-                           <p className="text-sm font-bold text-white truncate">{thread.member_username} <span className="text-slate-500 font-normal">→ {thread.virtual_name}</span></p>
-                           <p className="text-xs text-slate-400 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
+                      return (
+                        <button key={key} onClick={() => setSelectedThread(thread)} className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'admin-bg2 admin-border hover:border-slate-300'}`}>
+                          <div className="relative flex-shrink-0">
+                            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold text-indigo-700">
+                              {thread.virtual_name?.slice(0, 1)}
+                            </div>
+                            {isWait && <div className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 border-2 border-white rounded-full" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold admin-text truncate">{thread.member_username} <span className="admin-text3 font-normal">→ {thread.virtual_name}</span></p>
+                            <p className="text-xs admin-text3 truncate mt-0.5">{isWait ? 'Yanıt bekliyor...' : 'Yanıtlandı'}</p>
                            <div className="flex flex-wrap gap-1 mt-1">
                              {ops.priority && <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${ops.priority === 'high' ? 'bg-rose-100 text-rose-700' : ops.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{ops.priority.toUpperCase()}</span>}
-                             {ops.assigned_admin ? <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">{ops.assigned_admin}</span> : <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-300">Atanmamış</span>}
+                             {ops.assigned_admin ? <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">{ops.assigned_admin}</span> : <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-black">Atanmamış</span>}
                              {waitMin >= 15 && <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">SLA Risk</span>}
                            </div>
                          </div>
@@ -1694,32 +1700,32 @@ export default function App() {
                  </div>
                </div>
 
-               <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Toplu Mesaj</h3>
-                  <p className="text-xs text-slate-400 mb-3">Seçili sohbetlere tek seferde gönderim yap. Önce üstten sohbetleri işaretle.</p>
-                  <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full mb-2 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm">
+               <div className="admin-bg rounded-2xl p-4 admin-border shadow-sm">
+                  <h3 className="text-sm font-bold admin-text3 uppercase tracking-wider mb-3">Toplu Mesaj</h3>
+                  <p className="text-xs admin-text3 mb-3">Seçili sohbetlere tek seferde gönderim yap. Önce üstten sohbetleri işaretle.</p>
+                  <select value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full mb-2 admin-input rounded-xl px-3 py-2 text-sm admin-text">
                     {BULK_TEMPLATES.map((tmpl) => <option key={tmpl} value={tmpl}>{tmpl}</option>)}
                   </select>
-                  <textarea value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-sm min-h-[90px] focus:outline-none focus:border-indigo-400" placeholder="Toplu mesaj şablonu..." />
+                  <textarea value={bulkTemplate} onChange={(e) => setBulkTemplate(e.target.value)} className="w-full admin-input rounded-xl p-3 text-sm min-h-[90px] focus:outline-none focus:border-indigo-400" placeholder="Toplu mesaj şablonu..." />
                   <div className="mt-3 flex items-center gap-2">
                     <button onClick={sendBulkTemplate} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-sm">Seçili Sohbetlere Gönder</button>
-                    <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 bg-slate-800 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold">Temizle</button>
+                    <button onClick={() => setSelectedThreadKeys({})} className="px-3 py-2.5 admin-bg2 hover:bg-slate-200 admin-text2 rounded-xl text-sm font-semibold">Temizle</button>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 space-y-2">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase">Toplu Operasyon</h4>
-                    <select value={bulkPriority} onChange={(e) => setBulkPriority(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+                  <div className="mt-4 pt-3 border-t admin-border space-y-2">
+                    <h4 className="text-xs font-bold admin-text3 uppercase">Toplu Operasyon</h4>
+                    <select value={bulkPriority} onChange={(e) => setBulkPriority(e.target.value)} className="w-full admin-input rounded-lg px-2 py-2 text-xs admin-text2">
                       <option value="">Öncelik Seç</option>
                       <option value="high">Yüksek</option>
                       <option value="medium">Orta</option>
                       <option value="low">Düşük</option>
                     </select>
-                    <select value={bulkStatusTag} onChange={(e) => setBulkStatusTag(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+                    <select value={bulkStatusTag} onChange={(e) => setBulkStatusTag(e.target.value)} className="w-full admin-input rounded-lg px-2 py-2 text-xs admin-text2">
                       <option value="">Tag Atama (opsiyonel)</option>
                       {THREAD_TAGS.map((tag) => <option key={`bulk-${tag}`} value={tag}>{tag}</option>)}
                     </select>
-                    <input value={bulkAssignTo} onChange={(e) => setBulkAssignTo(e.target.value)} placeholder="Sorumlu admin (örn: ayse_admin)" className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs" />
-                    <input value={bulkFollowUpDate} onChange={(e) => setBulkFollowUpDate(e.target.value)} type="date" className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs" />
-                    <select value={bulkBlacklistMode} onChange={(e) => setBulkBlacklistMode(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-2 text-xs">
+                    <input value={bulkAssignTo} onChange={(e) => setBulkAssignTo(e.target.value)} placeholder="Sorumlu admin (örn: ayse_admin)" className="w-full admin-input rounded-lg px-2 py-2 text-xs admin-text2" />
+                    <input value={bulkFollowUpDate} onChange={(e) => setBulkFollowUpDate(e.target.value)} type="date" className="w-full admin-input rounded-lg px-2 py-2 text-xs admin-text2" />
+                    <select value={bulkBlacklistMode} onChange={(e) => setBulkBlacklistMode(e.target.value)} className="w-full admin-input rounded-lg px-2 py-2 text-xs admin-text2">
                       <option value="ignore">Blacklist Değiştirme</option>
                       <option value="true">Blacklist: Aç</option>
                       <option value="false">Blacklist: Kapat</option>
@@ -1728,31 +1734,31 @@ export default function App() {
                   </div>
                </div>
 
-               <div className="bg-slate-900 rounded-2xl p-4 border border-slate-700 shadow-sm">
-                  <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">SLA & Durum</h3>
-                  <div className="space-y-2 text-sm text-slate-700">
-                    <div className="flex justify-between"><span>Bekleyen Mesaj:</span> <strong className="text-rose-600">{slaStats.waitingCount}</strong></div>
-                    <div className="flex justify-between"><span>Ort. Bekleme:</span> <strong>{slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`}</strong></div>
+               <div className="admin-bg rounded-2xl p-4 admin-border shadow-sm">
+                  <h3 className="text-sm font-bold admin-text3 uppercase tracking-wider mb-3">SLA & Durum</h3>
+                  <div className="space-y-2 text-sm admin-text2">
+                    <div className="flex justify-between"><span className="admin-text2">Bekleyen Mesaj:</span> <strong className="text-rose-600">{slaStats.waitingCount}</strong></div>
+                    <div className="flex justify-between"><span className="admin-text2">Ort. Bekleme:</span> <strong className="admin-text">{slaStats.avgWaitMin > 0 && slaStats.avgWaitMin < 1 ? '<1 dk' : `${slaStats.avgWaitMin.toFixed(1)} dk`}</strong></div>
                   </div>
                </div>
             </aside>
 
             {/* Admin Center - Chat Tab */}
-            <main className="flex-1 bg-slate-900 rounded-2xl border border-slate-700 shadow-sm flex flex-col overflow-hidden">
+            <main className="flex-1 admin-bg rounded-2xl admin-border shadow-sm flex flex-col overflow-hidden">
                {adminTab === 'chat' && (
                  <>
-                    <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/50">
+                    <div className="px-6 py-4 border-b admin-border flex items-center justify-between admin-bg2/50">
                       <div>
-                        <h2 className="text-lg font-bold text-white">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
+                        <h2 className="text-lg font-bold admin-text">{selectedThread?.virtual_name || 'Lütfen bir sohbet seçin'}</h2>
                         <p className="text-xs font-semibold text-emerald-600">Sanal Profil Modülü</p>
                         {selectedThread && (
-                          <p className="text-[11px] font-semibold text-slate-400 mt-1">
+                          <p className="text-[11px] font-semibold admin-text3 mt-1">
                             Öncelik: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.priority || '-')} •
                             Sorumlu: {(threadOpsByKey[threadKey(selectedThread.member_id, selectedThread.virtual_profile_id)]?.assigned_admin || 'Atanmamış')}
                           </p>
                         )}
                       </div>
-                      <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="bg-slate-900 border border-slate-700 text-sm font-medium py-1.5 px-3 rounded-lg outline-none">
+                      <select value={selectedThread?.status_tag || 'takip_edilecek'} onChange={(e) => updateSelectedThreadTag(e.target.value)} className="admin-bg border admin-border text-sm font-medium py-1.5 px-3 rounded-lg outline-none admin-text2">
                         {THREAD_TAGS.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
                       </select>
                     </div>

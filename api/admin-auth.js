@@ -52,52 +52,57 @@ export default async function handler(req, res) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { data: existingUsers } = await adminClient.auth.admin.listUsers();
-    const existingAdmin = existingUsers?.users?.find((u) => u.email === ADMIN_EMAIL);
-
-    if (!existingAdmin) {
-      const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-        email: ADMIN_EMAIL,
-        password,
-        email_confirm: true,
-        user_metadata: { username: 'admin' },
-        app_metadata: { role: 'admin' },
-      });
-
-      if (createError) {
-        return json(res, 500, { ok: false, error: createError.message });
-      }
-
-      const { data: sessionData, error: signInError } = await adminClient.auth.signInWithPassword({
-        email: ADMIN_EMAIL,
-        password,
-      });
-
-      if (signInError) {
-        return json(res, 500, { ok: false, error: signInError.message });
-      }
-
-      return json(res, 200, { ok: true, session: sessionData.session });
-    }
-
+    // Try sign-in first
     const { data: sessionData, error: signInError } = await adminClient.auth.signInWithPassword({
       email: ADMIN_EMAIL,
       password,
     });
 
-    if (signInError) {
-      await adminClient.auth.admin.updateUserById(existingAdmin.id, { password });
-      const { data: retrySession } = await adminClient.auth.signInWithPassword({
+    if (!signInError) {
+      return json(res, 200, { ok: true, session: sessionData.session });
+    }
+
+    // Sign-in failed — try to create the admin user
+    const { error: createError } = await adminClient.auth.admin.createUser({
+      email: ADMIN_EMAIL,
+      password,
+      email_confirm: true,
+      user_metadata: { username: 'admin' },
+      app_metadata: { role: 'admin' },
+    });
+
+    if (!createError) {
+      // User was just created — sign in
+      const { data: newSession, error: newSignInError } = await adminClient.auth.signInWithPassword({
         email: ADMIN_EMAIL,
         password,
       });
-      if (!retrySession?.session) {
-        return json(res, 500, { ok: false, error: 'login_failed' });
-      }
-      return json(res, 200, { ok: true, session: retrySession.session });
+      if (newSignInError) return json(res, 500, { ok: false, error: newSignInError.message });
+      return json(res, 200, { ok: true, session: newSession.session });
     }
 
-    return json(res, 200, { ok: true, session: sessionData.session });
+    // createUser failed because user already exists — find and update password
+    let page = 0;
+    let adminId = null;
+    while (!adminId) {
+      const { data: usersPage } = await adminClient.auth.admin.listUsers({ page: page + 1, perPage: 100 });
+      const found = usersPage?.users?.find((u) => u.email === ADMIN_EMAIL);
+      if (found) { adminId = found.id; break; }
+      if (!usersPage?.users?.length) break;
+      page++;
+    }
+
+    if (!adminId) {
+      return json(res, 500, { ok: false, error: 'admin_user_not_found' });
+    }
+
+    await adminClient.auth.admin.updateUserById(adminId, { password });
+    const { data: retrySession } = await adminClient.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password,
+    });
+    if (!retrySession?.session) return json(res, 500, { ok: false, error: 'login_failed' });
+    return json(res, 200, { ok: true, session: retrySession.session });
   } catch (err) {
     return json(res, 500, { ok: false, error: err.message });
   }

@@ -139,11 +139,11 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
             variants={itemVariants}
             className="mt-10 flex flex-wrap items-center justify-center gap-6 text-xs text-slate-200 font-bold drop-shadow-md"
           >
-            <span className="flex items-center gap-1.5"><span className="text-emerald-400">🔒</span> Uçtan uca şifreli</span>
-            <span className="w-1 h-1 rounded-full bg-slate-700" />
-            <span className="flex items-center gap-1.5"><span className="text-amber-400">⚡</span> Kredi kartı gerekmez</span>
-            <span className="w-1 h-1 rounded-full bg-slate-700" />
-            <span className="flex items-center gap-1.5"><span className="text-blue-400">✨</span> 30 saniyede başla</span>
+            <span className="flex items-center gap-1.5"><span className="text-emerald-400" role="img" aria-label="kilit simgesi">🔒</span> Uçtan uca şifreli</span>
+            <span className="w-1 h-1 rounded-full bg-slate-700" aria-hidden="true" />
+            <span className="flex items-center gap-1.5"><span className="text-amber-400" role="img" aria-label="şimşek simgesi">⚡</span> Kredi kartı gerekmez</span>
+            <span className="w-1 h-1 rounded-full bg-slate-700" aria-hidden="true" />
+            <span className="flex items-center gap-1.5"><span className="text-blue-400" role="img" aria-label="yıldız simgesi">✨</span> 30 saniyede başla</span>
           </motion.div>
         </motion.div>
 
@@ -233,16 +233,19 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
             {[
               {
                 icon: '⚡',
+                iconLabel: 'şimşek',
                 title: 'Anlık Sohbet',
                 desc: 'Gerçek zamanlı mesajlaşma altyapısı sayesinde mesajlarınız anında iletilir. Hiçbir gecikme yok.',
               },
               {
                 icon: '🛡️',
+                iconLabel: 'kalkan',
                 title: 'Güvenli Platform',
                 desc: 'Tüm mesajlarınız şifrelidir. Gizliliğiniz bizim için önceliktir. Doğrulanmış hesaplar ile güvenli sohbet.',
               },
               {
                 icon: '💘',
+                iconLabel: 'kalp',
                 title: 'Akıllı Eşleşme',
                 desc: 'Hobilerinize ve ilgi alanlarınıza göre size en uygun profilleri önce gösteririz.',
               },
@@ -253,7 +256,7 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
                 whileHover={cardHoverEffect}
                 className="glass-card p-6"
               >
-                <div className="w-12 h-12 rounded-xl bg-slate-800/80 flex items-center justify-center text-2xl mb-4 border border-slate-700/50" role="img" aria-label={`${f.title} simgesi`}>
+                <div className="w-12 h-12 rounded-xl bg-slate-800/80 flex items-center justify-center text-2xl mb-4 border border-slate-700/50" role="img" aria-label={`${f.iconLabel} simgesi`}>
                   {f.icon}
                 </div>
                 <h3 className="text-lg font-bold text-white mb-2">{f.title}</h3>

@@ -1419,12 +1419,12 @@ export default function App() {
               className={`text-2xl font-black tracking-tight flex items-center gap-2 ${!isAdmin ? 'cursor-pointer' : 'cursor-default'}`}
               title={!isAdmin ? 'Keşfet sayfasına dön' : undefined}
             >
-              <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Sevgili Bul Logo" />
+              <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Sevgili Bul Logo" width="32" height="32" />
               <span className={isAdmin ? 'text-white' : 'bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-accent-500'}>Sevgili Bul</span>
             </button>
           ) : (
             <Link to="/" className="text-2xl font-black tracking-tight flex items-center gap-2 cursor-pointer">
-              <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Sevgili Bul Logo" />
+              <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Sevgili Bul Logo" width="32" height="32" />
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-accent-500">Sevgili Bul</span>
             </Link>
           )}
@@ -1533,7 +1533,7 @@ export default function App() {
                 <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
                   <div className="col-span-1 md:col-span-2">
                     <div className="text-2xl font-black text-white flex items-center gap-2 mb-4">
-                      <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Sevgili Bul Logo" />
+                      <img loading="lazy" src="/favicon.svg" className="w-8 h-8" alt="Sevgili Bul Logo" width="32" height="32" />
                       <span>Sevgili Bul</span>
                     </div>
                     <p className="text-sm leading-relaxed max-w-sm">Türkiye'nin en güvenilir, hızlı ve dinamik canlı sohbet ve arkadaşlık platformu. Yeni insanlarla tanışmanın en güvenli yolu.</p>
@@ -1648,10 +1648,10 @@ export default function App() {
                    </button>
                  </div>
                  <div className="grid grid-cols-2 gap-2 mb-3">
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'admin-bg2 admin-text2'}`}>Yanıt Bekleyen</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'admin-bg2 admin-text2'}`}>SLA Riski</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'admin-bg2 admin-text2'}`}>Atanmamış</button>
-                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-2 py-1.5 rounded-lg text-xs font-bold ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'admin-bg2 admin-text2'}`}>Blacklist</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, waitingOnly: !p.waitingOnly }))} className={`px-3 py-2.5 rounded-lg text-xs font-bold min-h-[44px] ${threadFilter.waitingOnly ? 'bg-indigo-100 text-indigo-700' : 'admin-bg2 admin-text2'}`}>Yanıt Bekleyen</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, slaRisk: !p.slaRisk }))} className={`px-3 py-2.5 rounded-lg text-xs font-bold min-h-[44px] ${threadFilter.slaRisk ? 'bg-rose-100 text-rose-700' : 'admin-bg2 admin-text2'}`}>SLA Riski</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, unassigned: !p.unassigned }))} className={`px-3 py-2.5 rounded-lg text-xs font-bold min-h-[44px] ${threadFilter.unassigned ? 'bg-amber-100 text-amber-700' : 'admin-bg2 admin-text2'}`}>Atanmamış</button>
+                   <button onClick={() => setThreadFilter((p) => ({ ...p, blacklist: !p.blacklist }))} className={`px-3 py-2.5 rounded-lg text-xs font-bold min-h-[44px] ${threadFilter.blacklist ? 'bg-slate-800 text-white' : 'admin-bg2 admin-text2'}`}>Blacklist</button>
                  </div>
                  <select value={threadSortMode} onChange={(e) => setThreadSortMode(e.target.value)} className="w-full mb-3 admin-input rounded-lg px-2 py-2 text-xs font-semibold admin-text2">
                    <option value="sla_unread_recent">SLA + Unread + Son Mesaj</option>

@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import SEO from '../../components/SEO';
-import { BLOG_POSTS, BLOG_CATEGORIES } from './blogData';
-import { buildArticleSchema, buildBreadcrumbSchema, SITE_URL } from '../../utils/seo';
+import { BLOG_POSTS, BLOG_CATEGORIES, getFaqForPost } from './blogData';
+import { buildArticleSchema, buildBreadcrumbSchema, buildFaqSchema, SITE_URL } from '../../utils/seo';
 
 export default function BlogPostPage() {
   const { slug } = useParams();
@@ -26,6 +26,8 @@ export default function BlogPostPage() {
     { name: 'Blog', path: '/blog' },
     { name: post.title, path: `/blog/${post.slug}` },
   ]);
+  const faqItems = getFaqForPost(post);
+  const faqSchema = buildFaqSchema(faqItems);
 
   return (
     <>
@@ -40,6 +42,7 @@ export default function BlogPostPage() {
         <meta property="article:tag" content={BLOG_CATEGORIES[post.category]} />
         <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(breadcrumb)}</script>
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
       </SEO>
 
       <article className="max-w-3xl mx-auto w-full py-12 px-4">
@@ -74,6 +77,44 @@ export default function BlogPostPage() {
           className="blog-content text-slate-300 leading-relaxed space-y-4"
           dangerouslySetInnerHTML={{ __html: post.content }}
         />
+
+        {faqItems && faqItems.length > 0 && (
+          <section className="mt-12 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+            <h2 className="text-2xl font-bold text-white mb-6">Sıkça Sorulan Sorular</h2>
+            <div className="space-y-4">
+              {faqItems.map((faq, idx) => (
+                <details key={idx} className="group p-4 bg-slate-900/50 rounded-lg border border-slate-700/50 [&_summary::-webkit-details-marker]:hidden cursor-pointer">
+                  <summary className="flex items-center justify-between text-white font-semibold select-none">
+                    <span>{faq.question || faq.q}</span>
+                    <span className="ml-2 flex-shrink-0 rounded-full p-1 bg-slate-700 text-slate-400 group-open:rotate-180 group-open:text-pink-400 transition-all duration-300 text-xs">▼</span>
+                  </summary>
+                  <p className="mt-3 text-slate-400 text-sm leading-relaxed border-t border-slate-700 pt-3">
+                    {faq.answer || faq.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {(() => {
+          const related = BLOG_POSTS.filter(p => p.category === post.category && p.slug !== post.slug).slice(0, 3);
+          if (related.length === 0) return null;
+          return (
+            <section className="mt-12">
+              <h2 className="text-2xl font-bold text-white mb-6">Benzer İçerikler</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {related.map(p => (
+                  <Link key={p.slug} to={`/blog/${p.slug}`} className="block p-4 bg-slate-800/50 rounded-xl border border-slate-700 hover:border-pink-500/50 transition group">
+                    <span className="text-xs text-pink-400 font-semibold">{BLOG_CATEGORIES[p.category]}</span>
+                    <h3 className="text-sm font-bold text-white mt-1 group-hover:text-pink-400 transition line-clamp-2">{p.title}</h3>
+                    <p className="text-xs text-slate-500 mt-2">{p.readingTime} okuma</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         <hr className="border-slate-700 my-12" />
 

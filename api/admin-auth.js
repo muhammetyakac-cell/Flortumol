@@ -68,7 +68,7 @@ export default async function handler(req, res) {
       password,
       email_confirm: true,
       user_metadata: { username: 'admin' },
-      app_metadata: { role: 'admin' },
+      app_metadata: { is_admin: true },
     });
 
     if (!createError) {

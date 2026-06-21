@@ -508,4 +508,45 @@ const BLOG_POSTS = [
     image: '/og-image.png',
   },
 ];
-export { BLOG_CATEGORIES, BLOG_POSTS };
+function getFaqForPost(post) {
+  const faqs = {
+    flort: [
+      { q: 'Online flörtte başarılı olmak için nelere dikkat etmeliyim?', a: 'Online flörtte başarılı olmak için doğal ve samimi bir profil oluşturmalı, karşınızdaki kişiye özel ilk mesajlar göndermeli ve güvenlik önlemlerini ihmal etmemelisiniz. Yazımızda bu konuda detaylı ipuçları bulabilirsiniz.' },
+      { q: 'Flört uygulamalarında ilk mesaj nasıl olmalı?', a: 'İlk mesaj kısa, samimi ve karşınızdaki kişinin profiline özel olmalıdır. Klişe selamlaşmalar yerine ortak ilgi alanlarına yönelik sorular sormak daha etkilidir.' },
+      { q: 'Flörtte yapılan en büyük hatalar nelerdir?', a: 'En sık yapılan hatalar arasında abartılı profil bilgileri paylaşmak, çok agresif mesajlar göndermek ve kişisel sınırlara saygı göstermemek yer alır. Doğal ve saygılı olmak her zaman kazandırır.' },
+      { q: 'Flört sürecinde güvenlik nasıl sağlanır?', a: 'Kişisel bilgilerinizi paylaşmamak, ilk buluşmaları halka açık yerlerde yapmak ve platformun sunduğu güvenlik özelliklerini kullanmak temel güvenlik önlemleridir.' },
+      { q: 'Uzun süreli ilişki için flört nasıl yönetilmeli?', a: 'Uzun süreli bir ilişki hedefliyorsanız dürüst iletişim, ortak değerler ve karşılıklı saygı temelinde ilerlemek en önemli faktörlerdir.' },
+    ],
+    sohbet: [
+      { q: 'Online sohbetlerde ilgi çekici nasıl olunur?', a: 'Sohbet sırasında aktif dinleme yapmak, açık uçlu sorular sormak ve karşınızdakinin ilgi alanlarına göre konuyu yönlendirmek sohbeti canlı tutar.' },
+      { q: 'Sohbette ortak ilgi alanları nasıl bulunur?', a: 'Karşınızdaki kişinin profilini dikkatlice inceleyerek ve doğal sorular sorarak ortak noktaları keşfedebilirsiniz. Hobiler, filmler ve seyahat ortak ilgi alanları bulmak için harika başlangıç noktalarıdır.' },
+      { q: 'Sohbet sırasında mizah kullanmak neden önemlidir?', a: 'Mizah, sohbetin akışını canlandırır, pozitif bir atmosfer yaratır ve karşınızdaki kişiyle aranızda güçlü bir bağ kurulmasına yardımcı olur.' },
+      { q: 'Sohbet konuları tükendiğinde ne yapmalı?', a: 'Sohbet konuları tükendiğinde güncel olaylar, seyahat deneyimleri veya gelecek planları gibi evrensel konulara yönelmek sohbeti yeniden canlandırabilir.' },
+      { q: 'Sanal ortamda derin sohbetler nasıl kurulur?', a: 'Derin sohbetler kurmak için yüzeysel konulardan kaçının, kişisel deneyimlerinizi paylaşın ve karşınızdakine anlamlı sorular yöneltin.' },
+    ],
+    guvenlik: [
+      { q: 'Online platformlarda kişisel bilgilerimi nasıl korurum?', a: 'Adres, telefon numarası ve TC kimlik gibi özel bilgilerinizi asla paylaşmayın. Güçlü şifreler kullanın ve iki faktörlü doğrulamayı aktif edin.' },
+      { q: 'Siber dolandırıcılıklardan nasıl korunabilirim?', a: 'Şüpheli bağlantılara tıklamayın, tanımadığınız kişilerden gelen dosyaları indirmeyin ve para taleplerine karşı her zaman şüpheci yaklaşın.' },
+      { q: 'Güvenli bir şifre nasıl oluşturulur?', a: 'En az 12 karakter, büyük/küçük harf, rakam ve özel karakter içeren şifreler oluşturun. Her platform için farklı şifre kullanmaya özen gösterin.' },
+      { q: 'Dijital ayak izi nedir ve nasıl yönetilir?', a: 'Dijital ayak izi, internette bıraktığınız tüm izlerdir. Paylaşımlarınıza dikkat ederek ve gizlilik ayarlarınızı kontrol ederek dijital ayak izinizi yönetebilirsiniz.' },
+      { q: 'Online flörtte dolandırıcılık belirtileri nelerdir?', a: 'Hemen kişisel bilgi isteyen, para göndermenizi talep eden veya buluşmayı sürekli erteleyen kişilere karşı dikkatli olun. Gerçek olamayacak kadar mükemmel profiller genellikle sahtedir.' },
+    ],
+    rehber: [
+      { q: 'Sevgili Bul platformu hakkında bilmeniz gerekenler nelerdir?', a: 'Sevgili Bul, kullanıcı dostu arayüzü ve gelişmiş özellikleri ile öne çıkar. Adım adım rehberimizi takip ederek platformdan en iyi şekilde faydalanabilirsiniz.' },
+      { q: 'Flört uygulaması seçerken hangi kriterlere dikkat edilmeli?', a: 'Güvenlik önlemleri, kullanıcı kitlesi, kullanım kolaylığı ve sunulan özellikler bir flört uygulaması seçerken değerlendirilmesi gereken temel kriterlerdir.' },
+      { q: 'Jeton sistemi nasıl çalışır?', a: 'Jetonlar, platformdaki premium özellikleri kullanmanızı sağlayan sanal birimlerdir. Kayıt sırasında ücretsiz jeton kazanabilir veya paket satın alarak jeton yükleyebilirsiniz.' },
+      { q: 'Profil doğrulama neden önemlidir?', a: 'Profil doğrulama, platformdaki kullanıcıların gerçek kişiler olduğunu teyit eder. Bu sayede sahte hesaplarla vakit kaybetmeden güvenli bir sohbet deneyimi yaşarsınız.' },
+      { q: 'Sevgili Bul nasıl kullanılır?', a: 'Kayıt olduktan sonra profil oluşturma, şehir seçimi, sohbet başlatma ve jeton kullanımı gibi tüm adımları kapsamlı rehberimizde bulabilirsiniz.' },
+    ],
+    sehir: [
+      { q: 'Bu şehirde flört etmek için en iyi mekanlar nerelerdir?', a: 'Şehir rehberimizde her şehrin kendine özgü romantik mekanlarını, kafe ve restoran önerilerini detaylı olarak bulabilirsiniz.' },
+      { q: 'Şehir bazlı flörtte nelere dikkat edilmeli?', a: 'Her şehrin kendine özgü kültürel dinamikleri vardır. Şehrin sosyal hayatını ve popüler buluşma noktalarını bilmek flört deneyiminizi olumlu etkiler.' },
+      { q: 'İlk buluşma için öneriler nelerdir?', a: 'İlk buluşma için şehrin merkezi ve güvenli bölgelerini tercih edin. Kafe, park veya sahil kenarı gibi rahat ortamlar ilk buluşma için idealdir.' },
+      { q: 'Şehirdeki flört potansiyeli hakkında bilgi alabilir miyim?', a: 'Her şehirdeki aktif kullanıcı sayısı ve flört kültürü farklılık gösterir. Şehir rehberlerimizde bu konuda detaylı bilgiler bulabilirsiniz.' },
+      { q: 'Farklı şehirlerden insanlarla tanışmak mümkün mü?', a: 'Evet, platformumuzda şehir filtresi kullanarak istediğiniz şehirden insanlarla tanışabilir ve sohbet edebilirsiniz.' },
+    ],
+  };
+  return faqs[post.category] || faqs.flort;
+}
+
+export { BLOG_CATEGORIES, BLOG_POSTS, getFaqForPost };

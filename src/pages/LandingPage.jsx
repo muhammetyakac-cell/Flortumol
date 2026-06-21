@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 const HeroCanvas = lazy(() => import('../components/HeroCanvas'));
-import { buildFaqSchema, buildProductSchema } from '../utils/seo';
+import { buildFaqSchema, buildProductSchema, buildAggregateRatingSchema } from '../utils/seo';
 
 const FAQ_ITEMS = [
   { question: 'Sevgili Bul nedir?', answer: 'Sevgili Bul, Türkiye\'nin en güvenilir canlı sohbet ve flört platformudur. Yeni insanlarla tanışmak, sohbet etmek ve arkadaşlıklar kurmak için tasarlanmış modern bir uygulamadır.' },
@@ -14,10 +14,21 @@ const FAQ_ITEMS = [
   { question: 'Nasıl kayıt olabilirim?', answer: 'Anasayfadaki kayıt ol butonuna tıklayarak, kullanıcı adı ve şifre belirleyerek hemen ücretsiz hesabınızı oluşturabilirsiniz. E-posta onayı gerektirmez, anında sohbete başlayabilirsiniz.' },
   { question: 'Jeton nedir ve nasıl kazanılır?', answer: 'Jetonlar, premium özellikleri kullanmanızı sağlayan sanal birimlerdir. Kayıt olduğunuzda size 100 ücretsiz jeton hediye edilir. Dilerseniz paket satın alarak jeton yükleyebilirsiniz.' },
   { question: 'Profilimi nasıl özelleştirebilirim?', answer: 'Profil sayfanızdan fotoğraf, yaş, şehir, ilgi alanları ve hobi bilgilerinizi güncelleyebilir, kendinizi en iyi şekilde ifade edebilirsiniz.' },
+  { question: 'Yaş sınırı var mı?', answer: 'Sevgili Bul\'u kullanmak için en az 18 yaşında olmanız gerekmektedir. Platformumuzdaki tüm kullanıcıların yaş doğrulaması yapılmaktadır.' },
+  { question: 'Rahatsız edici kullanıcıları nasıl engellerim?', answer: 'Bir kullanıcının profil sayfasında veya sohbet ekranında bulunan engelleme butonuna tıklayarak o kişiyi anında engelleyebilirsiniz. Engellediğiniz kullanıcı size mesaj gönderemez.' },
+  { question: 'Şifremi unuttum, ne yapmalıyım?', answer: 'Giriş ekranında "Şifremi Unuttum" linkine tıklayarak şifre sıfırlama işlemini başlatabilirsiniz. Yeni şifre belirlemek için adımları takip edin.' },
+  { question: 'Premium üyelik ve jeton arasındaki fark nedir?', answer: 'Premium üyelik belirli özelliklerin kilidini açarken, jetonlar daha esnek bir kullanım sunar. İstediğiniz kadar jeton satın alır ve istediğiniz premium özellik için harcarsınız.' },
+  { question: 'Hesabımı silebilir miyim?', answer: 'Evet, ayarlar sayfanızdan "Hesabımı Sil" seçeneğine tıklayarak hesabınızı kalıcı olarak silebilirsiniz. Tüm verileriniz 30 gün içinde sistemden tamamen silinir.' },
+  { question: 'Aynı anda kaç kişiyle sohbet edebilirim?', answer: 'Herhangi bir sınırlama yoktur. Dilediğiniz kadar aktif sohbete sahip olabilir ve tüm mesajlarınızı tek bir ekrandan yönetebilirsiniz.' },
+  { question: 'Sevgili Bul\'da dolandırıcılık riski var mı?', answer: 'Platformumuz gelişmiş güvenlik önlemleri ile korunmaktadır. Şüpheli hesapları tespit etmek için yapay zeka destekli moderasyon sistemimiz 7/24 aktiftir. Yine de kişisel bilgilerinizi paylaşmamanız önerilir.' },
+  { question: 'Mobil uygulamanız var mı?', answer: 'Şu an için Sevgili Bul, web tarayıcınız üzerinden tüm cihazlarda sorunsuz çalışmaktadır. Mobil uygulama üzerinde çalışmalarımız devam etmektedir.' },
+  { question: 'Aynı şehirden insanlarla nasıl tanışabilirim?', answer: 'Kayıt sırasında şehrinizi seçtikten sonra şehir bazlı filtreleme özelliğimizi kullanarak aynı bölgedeki kullanıcıları görebilirsiniz. Ayrıca şehir sayfalarımızdan da keşif yapabilirsiniz.' },
+  { question: 'Profil fotoğrafımı değiştirebilir miyim?', answer: 'Profil sayfanızdan istediğiniz zaman fotoğrafınızı ekleyebilir, silebilir veya güncelleyebilirsiniz. Fotoğraflarınızın net ve güncel olmasına özen gösterin.' },
 ];
 
 const faqSchema = buildFaqSchema(FAQ_ITEMS);
 const productSchema = buildProductSchema();
+const aggregateRatingSchema = buildAggregateRatingSchema();
 
 export default function LandingPage({ setMode, setShowAuthModal }) {
   const containerVariants = {
@@ -57,6 +68,7 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
         <meta property="og:description" content="Sevgili Bul ile Türkiye'nin dört bir yanından yeni insanlarla tanışın, canlı sohbet edin ve arkadaşlıklar kurun." />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(productSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(aggregateRatingSchema)}</script>
       </Helmet>
       
       {/* --- HERO --- */}
@@ -432,6 +444,22 @@ export default function LandingPage({ setMode, setShowAuthModal }) {
               {
                 q: 'Profil doğrulaması nedir?',
                 a: 'Güvenli sohbet ortamı oluşturmak adına, gerçek kullanıcı olduğunu doğrulayan hesaplara özel onay rozeti verilir. Bu sayede sahte hesaplarla vakit kaybetmeden doğrudan gerçek kişilerle konuşabilirsiniz.',
+              },
+              {
+                q: 'Rahatsız eden kullanıcıları nasıl bildirebilirim?',
+                a: 'Profil sayfasında veya sohbet ekranında yer alan "Şikayet Et" butonuna tıklayarak rahatsız edici kullanıcıları moderasyon ekibimize bildirebilirsiniz. Şikayetiniz en kısa sürede incelenir.',
+              },
+              {
+                q: 'Jetonları nasıl satın alabilirim?',
+                a: 'Profilinizdeki "Jeton Yükle" bölümünden kredi kartı veya banka havalesi ile dilediğiniz jeton paketini satın alabilirsiniz. Tüm ödemeler güvenli ödeme altyapısı ile korunmaktadır.',
+              },
+              {
+                q: 'Yaş sınırı nedir?',
+                a: 'Platformumuzu kullanmak için en az 18 yaşında olmanız gerekmektedir. Yaş doğrulaması yapılamayan hesaplar otomatik olarak kısıtlanmaktadır.',
+              },
+              {
+                q: 'Hesabımı nasıl silebilirim?',
+                a: 'Ayarlar sayfanızdaki "Hesabımı Sil" seçeneğini kullanarak hesabınızı kalıcı olarak silebilirsiniz. 30 gün içinde tüm verileriniz sistemden silinir.',
               },
             ].map((faq, idx) => (
               <motion.div key={idx} variants={itemVariants}>

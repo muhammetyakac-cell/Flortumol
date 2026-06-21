@@ -47,15 +47,15 @@ export default function BlogListPage() {
           >
             Tümü
           </button>
-          {Object.entries(BLOG_CATEGORIES).map(([key, label]) => (
-            <button
-              key={key}
-              onClick={() => setActiveCategory(key)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeCategory === key ? 'bg-pink-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
-            >
-              {label}
-            </button>
-          ))}
+            {Object.entries(BLOG_CATEGORIES).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setActiveCategory(key)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition ${activeCategory === key ? 'bg-pink-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}
+              >
+                {label}
+              </button>
+            ))}
         </nav>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -82,6 +82,21 @@ export default function BlogListPage() {
         {filtered.length === 0 && (
           <p className="text-center text-slate-400 py-12">Bu kategoride henüz içerik bulunmuyor.</p>
         )}
+
+        <div className="mt-12 pt-8 border-t border-slate-700 text-center">
+          <h2 className="text-lg font-bold text-white mb-4">Kategoriler</h2>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {Object.entries(BLOG_CATEGORIES).map(([key, label]) => (
+              <Link
+                key={key}
+                to={`/blog/kategori/${key}`}
+                className="px-4 py-2 bg-slate-800 text-slate-300 rounded-full text-sm font-medium hover:bg-slate-700 hover:text-white transition border border-slate-700"
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
+        </div>
       </section>
     </>
   );

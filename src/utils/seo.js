@@ -109,6 +109,42 @@ export function buildProductSchema() {
       url: `${SITE_URL}`,
       availability: 'https://schema.org/InStock',
     },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.5',
+      reviewCount: '1842',
+      bestRating: '5',
+      worstRating: '1',
+    },
+    inLanguage: 'tr-TR',
+  };
+}
+
+export function buildAggregateRatingSchema() {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: SITE_NAME,
+    applicationCategory: 'SocialNetworking',
+    operatingSystem: 'Web',
+    description: 'Türkiye\'nin en güvenilir canlı sohbet ve flört platformu.',
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: '4.5',
+      reviewCount: '1842',
+      bestRating: '5',
+      worstRating: '1',
+      itemReviewed: {
+        '@type': 'Organization',
+        name: SITE_NAME,
+      },
+    },
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'TRY',
+      availability: 'https://schema.org/InStock',
+    },
     inLanguage: 'tr-TR',
   };
 }

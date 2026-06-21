@@ -10,6 +10,7 @@ const TermsPage = lazy(() => import('./pages/TermsPage'));
 const CityPage = lazy(() => import('./pages/CityPage'));
 const BlogListPage = lazy(() => import('./pages/blog/BlogListPage'));
 const BlogPostPage = lazy(() => import('./pages/blog/BlogPostPage'));
+const CategoryBlogPage = lazy(() => import('./pages/blog/CategoryBlogPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const CookiePolicyPage = lazy(() => import('./pages/CookiePolicyPage'));
 import { supabase } from './supabase';
@@ -147,6 +148,11 @@ export default function App() {
   const [registeredMembers, setRegisteredMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
   const [selectedMemberProfile, setSelectedMemberProfile] = useState(null);
+  const [selectedAdminMember, setSelectedAdminMember] = useState(null);
+  const [adminMemberDetailOpen, setAdminMemberDetailOpen] = useState(false);
+  const [adminMemberThreads, setAdminMemberThreads] = useState([]);
+  const [adminMemberMessageCount, setAdminMemberMessageCount] = useState(0);
+  const [savingMemberDetail, setSavingMemberDetail] = useState(false);
   const [userProfileRenderCount, setUserProfileRenderCount] = useState(LIST_BATCH_SIZE);
   const [adminThreadRenderCount, setAdminThreadRenderCount] = useState(LIST_BATCH_SIZE);
   const [memberModeration, setMemberModeration] = useState({ note: '', tags: '', blacklisted: false });
@@ -684,7 +690,7 @@ export default function App() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const isAdminUser = session?.user?.app_metadata?.role === 'admin';
+      const isAdminUser = session?.user?.app_metadata?.is_admin === true || session?.user?.app_metadata?.role === 'admin';
       setIsAdmin(isAdminUser);
       if (typeof window !== 'undefined') {
         if (isAdminUser) {
@@ -1311,7 +1317,7 @@ export default function App() {
   async function fetchRegisteredMembers() {
     setLoadingMembers(true);
     const [{ data: profiles, error: profileError }, { data: members, error: memberError }] = await Promise.all([
-      supabase.from('member_profiles').select('member_id, coin_balance, contact_phone, updated_at').order('updated_at', { ascending: false }),
+      supabase.from('member_profiles').select('member_id, coin_balance, contact_phone, age, hobbies, city, photo_url, status_emoji, updated_at').order('updated_at', { ascending: false }),
       supabase.from('members').select('id, username, created_at'),
     ]);
     setLoadingMembers(false);
@@ -1324,6 +1330,11 @@ export default function App() {
       username: usernameById[p.member_id] || p.member_id,
       coin_balance: p.coin_balance, 
       contact_phone: p.contact_phone, 
+      age: p.age,
+      hobbies: p.hobbies,
+      city: p.city,
+      photo_url: p.photo_url,
+      status_emoji: p.status_emoji,
       created_at: createdAtById[p.member_id] || p.updated_at 
     })));
   }
@@ -1333,6 +1344,112 @@ export default function App() {
     if (error) return setStatus(error.message);
     setRegisteredMembers((prev) => prev.filter((m) => m.id !== memberId));
     setStatus('Kullanıcı silindi.');
+  }
+
+  async function openMemberDetails(member) {
+    setSelectedAdminMember({
+      ...member,
+      moderation_notes: '',
+      tags: '',
+      is_blacklisted: false,
+      muted_until: null
+    });
+    setAdminMemberDetailOpen(true);
+    setAdminMemberThreads([]);
+    setAdminMemberMessageCount(0);
+
+    // Fetch moderation in background
+    const { data: mod, error: modErr } = await supabase
+      .from('member_moderation')
+      .select('notes, tags, is_blacklisted, muted_until')
+      .eq('member_id', member.id)
+      .maybeSingle();
+
+    if (!modErr && mod) {
+      setSelectedAdminMember((prev) => prev ? {
+        ...prev,
+        moderation_notes: mod.notes || '',
+        tags: (mod.tags || []).join(', '),
+        is_blacklisted: !!mod.is_blacklisted,
+        muted_until: mod.muted_until || null
+      } : prev);
+    }
+
+    // Fetch message count in background
+    const { count, error: countErr } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('member_id', member.id)
+      .eq('sender_role', 'member');
+
+    if (!countErr) {
+      setAdminMemberMessageCount(count || 0);
+    }
+
+    // Fetch active chats in background
+    const { data: threads, error: threadsErr } = await supabase
+      .from('admin_threads')
+      .select('*')
+      .eq('member_id', member.id)
+      .order('last_message_at', { ascending: false });
+
+    if (!threadsErr && threads) {
+      setAdminMemberThreads(threads);
+    }
+  }
+
+  async function saveMemberDetails() {
+    if (!selectedAdminMember) return;
+    setSavingMemberDetail(true);
+    setStatus('Kullanıcı bilgileri güncelleniyor...');
+
+    const profilePayload = {
+      age: selectedAdminMember.age || null,
+      city: selectedAdminMember.city || '',
+      hobbies: selectedAdminMember.hobbies || '',
+      status_emoji: selectedAdminMember.status_emoji || '🙂',
+      contact_phone: selectedAdminMember.contact_phone || '',
+      coin_balance: selectedAdminMember.coin_balance ?? 100,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: profileError } = await supabase
+      .from('member_profiles')
+      .update(profilePayload)
+      .eq('member_id', selectedAdminMember.id);
+
+    if (profileError) {
+      setSavingMemberDetail(false);
+      return setStatus('Profil güncellenemedi: ' + profileError.message);
+    }
+
+    const modPayload = {
+      member_id: selectedAdminMember.id,
+      notes: selectedAdminMember.moderation_notes || '',
+      tags: selectedAdminMember.tags ? selectedAdminMember.tags.split(',').map((x) => x.trim()).filter(Boolean) : [],
+      is_blacklisted: !!selectedAdminMember.is_blacklisted,
+      muted_until: selectedAdminMember.muted_until || null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error: modError } = await supabase
+      .from('member_moderation')
+      .upsert(modPayload, { onConflict: 'member_id' });
+
+    setSavingMemberDetail(false);
+    if (modError) {
+      return setStatus('Moderasyon güncellenemedi: ' + modError.message);
+    }
+
+    await fetchRegisteredMembers();
+    setAdminMemberDetailOpen(false);
+    setStatus('Kullanıcı bilgileri başarıyla güncellendi.');
+  }
+
+  function jumpToMemberChat(thread) {
+    setSelectedThread(thread);
+    setAdminTab('chat');
+    setAdminMemberDetailOpen(false);
   }
 
   function openChatWithProfile(profileId) {
@@ -1521,6 +1638,7 @@ export default function App() {
                 <Route path="/gizlilik-politikasi" element={<PageSuspense><PrivacyPage /></PageSuspense>} />
                 <Route path="/kullanim-kosullari" element={<PageSuspense><TermsPage /></PageSuspense>} />
                 <Route path="/blog" element={<PageSuspense><BlogListPage /></PageSuspense>} />
+                <Route path="/blog/kategori/:category" element={<PageSuspense><CategoryBlogPage /></PageSuspense>} />
                 <Route path="/blog/:slug" element={<PageSuspense><BlogPostPage /></PageSuspense>} />
                 <Route path="/iletisim" element={<PageSuspense><ContactPage /></PageSuspense>} />
                 <Route path="/cerez-politikasi" element={<PageSuspense><CookiePolicyPage /></PageSuspense>} />
@@ -1936,16 +2054,19 @@ export default function App() {
                       ) : (
                         <div className="space-y-3">
                           {registeredMembers.map((member) => (
-                            <div key={member.id} className="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-xl p-4 shadow-sm">
+                            <div key={member.id} onClick={() => openMemberDetails(member)} className="flex items-center justify-between bg-slate-900 border border-slate-700 rounded-xl p-4 shadow-sm hover:bg-slate-800 cursor-pointer transition-colors group text-left">
                               <div className="min-w-0 pr-4">
-                                <p className="font-bold text-white truncate" title={member.username}>{member.username}</p>
+                                <p className="font-bold text-white truncate flex items-center gap-2" title={member.username}>
+                                  {member.username}
+                                  <span className="text-xs font-semibold text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity">🔍 Detaylar</span>
+                                </p>
                                 <p className="text-xs font-semibold text-slate-500 mt-1">Kayıt: {new Date(member.created_at).toLocaleString('tr-TR')}</p>
                                 <div className="flex flex-wrap items-center gap-2 mt-2 text-xs font-bold">
                                   <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md">Jeton: {member.coin_balance ?? 100}</span>
                                   <span className="bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md">İletişim: {member.contact_phone || '-'}</span>
                                 </div>
                               </div>
-                              <button onClick={() => { if(window.confirm('Bu kullanıcıyı tamamen silmek istediğine emin misin?')) deleteMember(member.id); }} className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-sm rounded-xl transition-colors">
+                              <button onClick={(e) => { e.stopPropagation(); if(window.confirm('Bu kullanıcıyı tamamen silmek istediğine emin misin?')) deleteMember(member.id); }} className="px-4 py-2 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold text-sm rounded-xl transition-colors shrink-0">
                                 Sil
                               </button>
                             </div>
@@ -2039,7 +2160,132 @@ export default function App() {
                       )) : <p className="text-xs text-slate-500">Henüz kayıtlı olay yok.</p>}
                     </div>
                  </div>
-              </aside>
+               </aside>
+            )}
+
+            {/* User Details Modal (for Admin) */}
+            {adminMemberDetailOpen && selectedAdminMember && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+                <div className="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-fade-in text-left">
+                  {/* Header */}
+                  <div className="p-6 border-b border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-lg">
+                        {selectedAdminMember.username.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-white">{selectedAdminMember.username}</h3>
+                        <p className="text-xs font-semibold text-slate-500">ID: {selectedAdminMember.id}</p>
+                      </div>
+                    </div>
+                    <button onClick={() => setAdminMemberDetailOpen(false)} className="text-slate-400 hover:text-white text-xl font-bold bg-slate-800 hover:bg-slate-700 w-8 h-8 rounded-full flex items-center justify-center transition-colors">✕</button>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Left Column: Profile Info & Form */}
+                    <div className="space-y-5">
+                      <h4 className="text-sm font-black text-indigo-400 uppercase tracking-wider">Profil Bilgileri</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Yaş</label>
+                          <input type="number" placeholder="Yaş girin" value={selectedAdminMember.age || ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, age: parseInt(e.target.value) || null }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white" />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Şehir</label>
+                          <input type="text" placeholder="Şehir girin" value={selectedAdminMember.city || ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, city: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Durum Emojisi</label>
+                        <input type="text" placeholder="Emoji girin (örn: 🙂)" value={selectedAdminMember.status_emoji || ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, status_emoji: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white" />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">İletişim Telefonu</label>
+                        <input type="text" placeholder="Telefon numarası" value={selectedAdminMember.contact_phone || ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, contact_phone: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white" />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Jeton Bakiyesi</label>
+                        <input type="number" placeholder="Jeton miktarı" value={selectedAdminMember.coin_balance ?? 100} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, coin_balance: parseInt(e.target.value) || 0 }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white" />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Hobiler</label>
+                        <textarea placeholder="Hobileri virgülle ayırarak girin..." value={selectedAdminMember.hobbies || ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, hobbies: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white min-h-[80px]" />
+                      </div>
+
+                      <div className="p-4 bg-slate-950 border border-slate-800/80 rounded-2xl flex flex-col gap-2 text-xs font-semibold text-slate-400">
+                        <p>Kayıt Tarihi: <span className="text-white">{new Date(selectedAdminMember.created_at).toLocaleString('tr-TR')}</span></p>
+                        <p>Toplam Gönderilen Mesaj: <span className="text-indigo-400 font-bold">{adminMemberMessageCount}</span></p>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Moderation & Chat History */}
+                    <div className="space-y-6 flex flex-col h-full min-h-[300px]">
+                      {/* Moderation */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-black text-rose-400 uppercase tracking-wider">Moderasyon ve Yasaklama</h4>
+                        
+                        <label className="flex items-center justify-between p-3.5 bg-slate-950 border border-slate-800 rounded-xl cursor-pointer shadow-sm hover:border-rose-500/30 transition-colors">
+                          <span className="font-bold text-slate-200 text-sm">Kara Listede (Yasaklı)</span>
+                          <input type="checkbox" checked={!!selectedAdminMember.is_blacklisted} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, is_blacklisted: e.target.checked }))} className="w-5 h-5 accent-rose-500 cursor-pointer" />
+                        </label>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Susturulma Süresi (Muted Until)</label>
+                          <input type="datetime-local" value={selectedAdminMember.muted_until ? new Date(selectedAdminMember.muted_until).toLocaleString('sv-SE').slice(0, 16).replace(' ', 'T') : ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, muted_until: e.target.value ? new Date(e.target.value).toISOString() : null }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white" />
+                          <p className="text-[10px] text-slate-500 mt-1">Boş bırakırsanız kullanıcının konuşma engeli olmayacaktır.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Moderasyon Notları</label>
+                          <textarea placeholder="Yönetici notları..." value={selectedAdminMember.moderation_notes || ''} onChange={(e) => setSelectedAdminMember(prev => ({ ...prev, moderation_notes: e.target.value }))} className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-indigo-500 text-white min-h-[70px]" />
+                        </div>
+                      </div>
+
+                      {/* Chat History */}
+                      <div className="flex-1 flex flex-col min-h-0">
+                        <h4 className="text-sm font-black text-emerald-400 uppercase tracking-wider mb-3">Sohbet Geçmişi</h4>
+                        <div className="flex-1 overflow-y-auto space-y-2 max-h-[220px] pr-1">
+                          {adminMemberThreads.map((thread) => (
+                            <div key={`${thread.member_id}::${thread.virtual_profile_id}`} onClick={() => jumpToMemberChat(thread)} className="p-3 bg-slate-950 border border-slate-800 rounded-xl hover:border-emerald-500/30 hover:bg-slate-900 cursor-pointer transition-all flex justify-between items-start text-xs text-left">
+                              <div className="min-w-0 pr-2">
+                                <p className="font-bold text-slate-200">{thread.virtual_name} ile sohbet</p>
+                                <p className="text-slate-400 truncate mt-1">{thread.last_message_content || 'Mesaj yok'}</p>
+                              </div>
+                              <div className="text-right shrink-0">
+                                <p className="text-slate-500 font-semibold">{new Date(thread.last_message_at).toLocaleDateString('tr-TR')}</p>
+                                <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${thread.status_tag === 'closed' ? 'bg-slate-800 text-slate-500' : 'bg-emerald-500/10 text-emerald-400'}`}>{thread.status_tag}</span>
+                              </div>
+                            </div>
+                          ))}
+                          {!adminMemberThreads.length && <p className="text-slate-500 italic text-xs p-3 bg-slate-950 border border-slate-800 rounded-xl">Kullanıcıya ait aktif sohbet bulunamadı.</p>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-6 border-t border-slate-850 bg-slate-950/40 flex flex-wrap items-center justify-between gap-3">
+                    <button onClick={() => { if(window.confirm('Bu kullanıcıyı tamamen silmek istediğine emin misin?')) { deleteMember(selectedAdminMember.id); setAdminMemberDetailOpen(false); } }} className="px-4 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold text-sm rounded-xl border border-rose-500/20 transition-colors">
+                      Kullanıcıyı Tamamen Sil
+                    </button>
+                    
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setAdminMemberDetailOpen(false)} className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm rounded-xl transition-colors">
+                        Kapat
+                      </button>
+                      <button onClick={saveMemberDetails} disabled={savingMemberDetail} className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 text-white font-bold text-sm rounded-xl shadow-md transition-colors">
+                        {savingMemberDetail ? 'Kaydediliyor...' : 'Bilgileri Güncelle'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
 
           </div>

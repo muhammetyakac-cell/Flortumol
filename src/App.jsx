@@ -35,6 +35,7 @@ import useAdminThreads from './hooks/useAdminThreads';
 import useAdminStats from './hooks/useAdminStats';
 import useAdminMembers from './hooks/useAdminMembers';
 import useAdminUI from './hooks/useAdminUI';
+import { hashToInt } from './helpers';
 import {
   initialMemberProfile, LIST_BATCH_SIZE, buildHourlyOnlineMap
 } from './appConstants';

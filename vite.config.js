@@ -6,14 +6,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom'],
-          'vendor-router': ['react-router-dom'],
-          'vendor-motion': ['framer-motion'],
-          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'vendor-supabase': ['@supabase/supabase-js'],
-          'vendor-helmet': ['react-helmet-async'],
-        },
+        // Let Vite handle chunking automatically to prevent initialization errors
       },
     },
     chunkSizeWarningLimit: 300,

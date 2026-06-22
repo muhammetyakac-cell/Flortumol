@@ -52,7 +52,10 @@ export default function App() {
     return window.localStorage.getItem('flort_login_mode') || 'user';
   });
   const [authForm, setAuthForm] = useState({ username: '', password: '' });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.localStorage.getItem('flort_admin_session') === 'true';
+  });
   const loading = authLoading; 
   const [showAuthModal, setShowAuthModal] = useState(false);
 

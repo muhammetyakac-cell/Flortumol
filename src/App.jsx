@@ -76,14 +76,19 @@ export default function App() {
   const [adminUnreadByThread, setAdminUnreadByThread] = useState({});
   const [hourKey, setHourKey] = useState(() => new Date().toISOString().slice(0, 13));
 
-  const coins = useCoins({ memberSession, isAdmin, loggedIn: !!memberSession || isAdmin, memberProfile, setMemberProfile, setStatus, userView, adminTab });
-  const profiles = useVirtualProfiles({ setStatus, selectRows, fetchIncomingThreads, selectedProfileId, setSelectedProfileId });
-  const chat = useChat({ memberSession, isAdmin, selectedProfileId, userView, coins, setStatus, setCoinPurchaseModalOpen: coins.setCoinPurchaseModalOpen, setOnboardingActionCount });
-  const threads = useAdminThreads({ isAdmin, adminUnreadByThread, setStatus, selectRows, insertRows, updateRows, recordEngagement: chat.recordEngagement });
-  const stats = useAdminStats({ isAdmin, adminTab, incomingThreads: threads.incomingThreads, threadMessages: threads.threadMessages, virtualProfiles: profiles.virtualProfiles, profileById, setStatus });
+  const loggedIn = !!memberSession || isAdmin;
+
   const adminUI = useAdminUI();
   const { adminDrawerOpen, adminTab, setAdminTab, adminDarkMode, setAdminDarkMode, notificationSoundEnabled, setNotificationSoundEnabled } = adminUI;
+
+  const coins = useCoins({ memberSession, isAdmin, loggedIn, memberProfile, setMemberProfile, setStatus, userView, adminTab });
+  const chat = useChat({ memberSession, isAdmin, selectedProfileId, userView, coins, setStatus, setCoinPurchaseModalOpen: coins.setCoinPurchaseModalOpen, setOnboardingActionCount });
+  const threads = useAdminThreads({ isAdmin, adminUnreadByThread, setStatus, selectRows, insertRows, updateRows, recordEngagement: chat.recordEngagement });
+  const profiles = useVirtualProfiles({ setStatus, selectRows, fetchIncomingThreads: threads.fetchIncomingThreads, selectedProfileId, setSelectedProfileId });
+  const profileById = useMemo(() => Object.fromEntries(profiles.virtualProfiles.map((p) => [p.id, p])), [profiles.virtualProfiles]);
+  const stats = useAdminStats({ isAdmin, adminTab, incomingThreads: threads.incomingThreads, threadMessages: threads.threadMessages, virtualProfiles: profiles.virtualProfiles, profileById, setStatus });
   const members = useAdminMembers({ threads, setStatus, setAdminTab });
+
   useRealtime({
     loggedIn, isAdmin, memberSession, selectedProfileId, selectedThread: threads.selectedThread, userView,
     virtualProfiles: profiles.virtualProfiles, notificationSoundEnabled,
@@ -93,6 +98,7 @@ export default function App() {
     setAdminUnreadByThread, setForcedOnlineProfiles,
     setOnlineProfiles, setTypingLabel, setAdminTypingByThread,
   });
+
   const adminChatBoxRef = useRef(null);
   const profileListRef = useRef(null);
   const threadQueueRef = useRef(null);
@@ -107,8 +113,6 @@ export default function App() {
     });
   }, [profiles.virtualProfiles, chat.unreadByProfile]);
 
-  const loggedIn = !!memberSession || isAdmin;
-  const profileById = useMemo(() => Object.fromEntries(profiles.virtualProfiles.map((p) => [p.id, p])), [profiles.virtualProfiles]);
   const selectedThreadProfile = useMemo(() => (threads.selectedThread ? profileById[threads.selectedThread.virtual_profile_id] : null), [threads.selectedThread, profileById]);
   
   const sortedIncomingThreads = useMemo(() => {

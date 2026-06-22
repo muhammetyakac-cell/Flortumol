@@ -22,4 +22,10 @@ export default defineConfig({
     minify: 'esbuild',
     target: 'es2020',
   },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/setupTests.ts',
+    includeSource: ['src/**/*.tsx', 'src/**/*.ts'],
+  },
 });

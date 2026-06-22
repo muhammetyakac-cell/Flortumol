@@ -10,7 +10,9 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "type-check": "tsc --noEmit",
     "test": "vitest",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -44,6 +46,8 @@
     "@testing-library/jest-dom": "^6.5.0",
     "@testing-library/user-event": "^14.5.2",
     "@typescript-eslint/parser": "^7.15.0",
-    "@typescript-eslint/eslint-plugin": "^7.15.0"
+    "@typescript-eslint/eslint-plugin": "^7.15.0",
+    "@storybook/react-vite": "^8.0.0",
+    "@storybook/builder-vite": "^8.0.0"
   }
 }

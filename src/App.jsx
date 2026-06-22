@@ -506,6 +506,7 @@ export default function App() {
             adminMemberThreads={members.adminMemberThreads} setAdminMemberThreads={members.setAdminMemberThreads}
             adminMemberMessageCount={members.adminMemberMessageCount} setAdminMemberMessageCount={members.setAdminMemberMessageCount}
             savingMemberDetail={members.savingMemberDetail} setSavingMemberDetail={members.setSavingMemberDetail}
+            registeredMembers={members.registeredMembers} loadingMembers={members.loadingMembers}
             paymentSettings={coins.paymentSettings} setPaymentSettings={coins.setPaymentSettings}
             notificationSoundEnabled={notificationSoundEnabled} setNotificationSoundEnabled={setNotificationSoundEnabled}
 profileForm={profiles.profileForm} setProfileForm={profiles.setProfileForm}

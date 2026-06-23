@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { COIN_COST_PER_MESSAGE } from '../appConstants';
 
-export default function useChat({ memberSession, isAdmin, selectedProfileId, userView, coins, setStatus, setCoinPurchaseModalOpen, setOnboardingActionCount }) {
+export default function useChat({ memberSession, isAdmin, selectedProfileId, userView, coins, setStatus, setCoinPurchaseModalOpen }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [focusedMessageId, setFocusedMessageId] = useState(null);
@@ -91,7 +91,7 @@ export default function useChat({ memberSession, isAdmin, selectedProfileId, use
       return setStatus(error.message);
     }
     recordEngagement('member_message', memberSession.id, activeProfileId, { source: 'chat_input' });
-    setOnboardingActionCount((prev) => prev + 1);
+
     if (data) {
       setMessages((prev) => prev.map((msg) => (msg.id === optimisticId ? data : msg)));
       setFocusedMessageId(data.id);
@@ -112,7 +112,7 @@ export default function useChat({ memberSession, isAdmin, selectedProfileId, use
     });
     if (error) return setStatus(error.message);
     recordEngagement('member_message', memberSession.id, profileId, { source: `reaction_${reactionType}` });
-    setOnboardingActionCount((prev) => prev + 1);
+
     setStatus('Etkileşim mesajı gönderildi.');
   }
 

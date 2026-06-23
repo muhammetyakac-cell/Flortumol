@@ -20,7 +20,7 @@ import ChatPage from './pages/app/ChatPage';
 import ProfileCoinsPage from './pages/app/ProfileCoinsPage';
 import AppHeader from './components/AppHeader';
 import StatusBanner from './components/StatusBanner';
-import OnboardingBanner from './components/OnboardingBanner';
+
 import LowCoinBanner from './components/LowCoinBanner';
 import AuthModal from './components/AuthModal';
 import CoinPurchaseModal from './components/CoinPurchaseModal';
@@ -61,7 +61,7 @@ export default function App() {
 
   const [selectedProfileId, setSelectedProfileId] = useState(null);
   const [memberProfile, setMemberProfile] = useState(initialMemberProfile);
-  const [onboardingActionCount, setOnboardingActionCount] = useState(0);
+
   const [onlineProfiles, setOnlineProfiles] = useState({});
   const [forcedOnlineProfiles, setForcedOnlineProfiles] = useState({});
   const [typingLabel, setTypingLabel] = useState('');
@@ -86,7 +86,7 @@ export default function App() {
   const { adminDrawerOpen, adminTab, setAdminTab, adminDarkMode, setAdminDarkMode, notificationSoundEnabled, setNotificationSoundEnabled } = adminUI;
 
   const coins = useCoins({ memberSession, isAdmin, loggedIn, memberProfile, setMemberProfile, setStatus, userView, adminTab });
-  const chat = useChat({ memberSession, isAdmin, selectedProfileId, userView, coins, setStatus, setCoinPurchaseModalOpen: coins.setCoinPurchaseModalOpen, setOnboardingActionCount });
+  const chat = useChat({ memberSession, isAdmin, selectedProfileId, userView, coins, setStatus, setCoinPurchaseModalOpen: coins.setCoinPurchaseModalOpen });
   const threads = useAdminThreads({ isAdmin, adminUnreadByThread, setStatus, selectRows, insertRows, updateRows, recordEngagement: chat.recordEngagement });
   const profiles = useVirtualProfiles({ setStatus, selectRows, fetchIncomingThreads: threads.fetchIncomingThreads, selectedProfileId, setSelectedProfileId });
   const profileById = useMemo(() => Object.fromEntries(profiles.virtualProfiles.map((p) => [p.id, p])), [profiles.virtualProfiles]);
@@ -248,14 +248,7 @@ export default function App() {
     [sortedIncomingThreads, adminThreadRenderCount]
   );
 
-  const onboardingState = useMemo(() => {
-    const hasPhoto = !!memberProfile.photo_url;
-    const hasHobbies = (memberProfile.hobbies || '').split(',').map((x) => x.trim()).filter(Boolean).length > 0;
-    const hasThreeActions = onboardingActionCount >= 3;
-    const completed = hasPhoto && hasHobbies && hasThreeActions;
-    const currentStep = !hasPhoto ? 1 : !hasHobbies ? 2 : !hasThreeActions ? 3 : 0;
-    return { hasPhoto, hasHobbies, hasThreeActions, completed, currentStep };
-  }, [memberProfile.photo_url, memberProfile.hobbies, onboardingActionCount]);
+
 
   function threadKey(memberId, profileId) { return `${memberId}::${profileId}`; }
 
@@ -434,7 +427,7 @@ export default function App() {
         setShowAuthModal={setShowAuthModal}
       />
 
-      <OnboardingBanner onboardingState={onboardingState} setUserView={setUserView} />
+
       <LowCoinBanner memberProfile={memberProfile} setUserView={setUserView} />
       <StatusBanner status={status} onClose={() => setStatus('')} />
 
